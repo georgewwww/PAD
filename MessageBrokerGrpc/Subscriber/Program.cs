@@ -55,7 +55,6 @@ namespace Subscriber
             {
                 Console.WriteLine($"Details: {e.Status.Detail}");
                 Console.WriteLine($"Status code: {e.Status.StatusCode}");
-                Console.WriteLine($"Status code int: {(int)e.Status.StatusCode}");
             }
         }
     }

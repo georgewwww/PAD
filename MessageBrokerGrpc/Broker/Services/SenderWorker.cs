@@ -8,7 +8,6 @@ using Grpc.Net.Client;
 using GrpcAgent;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json;
 
 namespace Broker.Services
 {
@@ -57,17 +56,21 @@ namespace Broker.Services
             {
                 var connections = _connectionRepository.GetConnectionsByBank(message.Bank);
 
+                if (connections.Count == 0)
+                {
+                    _messageRepository.Add(message);
+                }
+
                 foreach (var connection in connections)
                 {
                     var channel = GrpcChannel.ForAddress(connection.Address, new GrpcChannelOptions { HttpHandler = _httpHandler });
                     var client = new Notifier.NotifierClient(channel);
-                    var ratesString = JsonConvert.SerializeObject(message.Rates);
-                    var request = new NotifyRequest { Bank = message.Bank, Content =  ratesString };
+                    var request = new NotifyRequest { Bank = message.Bank, Content =  message.Rates };
 
                     try
                     {
                         var reply = client.Notify(request);
-                        Console.WriteLine($"Notified subscriber {connection.Address} with {ratesString}. Response: {reply.IsSuccess}");
+                        Console.WriteLine($"Notified subscriber {connection.Address} with {message.Rates}. Response: {reply.IsSuccess}");
                     }
                     catch (RpcException e)
                     {
@@ -78,7 +81,6 @@ namespace Broker.Services
 
                         Console.WriteLine($"Details: {e.Status.Detail}");
                         Console.WriteLine($"Status code: {e.Status.StatusCode}");
-                        Console.WriteLine($"Status code int: {(int)e.Status.StatusCode}");
                     }
                 }
             }

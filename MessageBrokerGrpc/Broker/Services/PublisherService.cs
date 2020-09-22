@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Broker.Infrastructure.Repository;
 using Broker.Models;
-using Common;
 using Grpc.Core;
 using GrpcAgent;
-using Newtonsoft.Json;
 
 namespace Broker.Services
 {
@@ -21,12 +18,11 @@ namespace Broker.Services
 
         public override Task<PublishReply> PublishMessage(PublishRequest request, ServerCallContext context)
         {
-            var rates = JsonConvert.DeserializeObject<Dictionary<Currency, double>>(request.Content);
-            var message = new Message(request.Bank, rates);
+            var message = new Message(request.Bank, request.Content);
 
             _messageRepository.Add(message);
 
-            Console.WriteLine($"Received: {request.Bank}, {rates}");
+            Console.WriteLine($"Received: {request.Bank}, {request.Content}");
 
             return Task.FromResult(new PublishReply
             {

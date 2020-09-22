@@ -9,9 +9,6 @@ namespace Broker
         {
             // To trust a certificate -> dotnet dev-certs https --trust
             CreateHostBuilder(args).Build().Run();
-
-            //var worker = new Worker();
-            //Task.Factory.StartNew(worker.DoSendMessageWork, TaskCreationOptions.LongRunning);
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>

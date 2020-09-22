@@ -1,4 +1,7 @@
-﻿namespace Broker.Models
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
+namespace Broker.Models
 {
     public class Connection
     {
@@ -8,7 +11,13 @@
             this.Bank = bankName;
         }
 
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public ObjectId Id { get; set; } 
+
+        [BsonElement]
         public string Address { get; set; }
+        [BsonElement]
         public string Bank { get; set; }
     }
 }

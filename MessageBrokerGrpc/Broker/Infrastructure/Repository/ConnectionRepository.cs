@@ -1,44 +1,34 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
+using Broker.Infrastructure.Persistence;
 using Broker.Models;
+using MongoDB.Driver;
 
 namespace Broker.Infrastructure.Repository
 {
     public class ConnectionRepository : IConnectionRepository
     {
-        private readonly List<Connection> _connections;
-        private readonly object _locker;
+        private IApplicationDbContext _dbContext;
 
-        public ConnectionRepository()
+        public ConnectionRepository(IApplicationDbContext dbContext)
         {
-            _connections = new List<Connection>();
-            _locker = new object();
+            _dbContext = dbContext;
         }
 
         public void Add(Connection connection)
         {
-            lock (_locker)
-            {
-                _connections.Add(connection);
-            }
+            _dbContext.Connections.InsertOne(connection);
         }
 
         public void Remove(string address)
         {
-            lock (_locker)
-            {
-                _connections.RemoveAll(x => x.Address == address);
-            }
+            var deleteFilter = Builders<Connection>.Filter.Eq(c => c.Address, address);
+            _dbContext.Connections.DeleteOne(deleteFilter);
         }
 
         public IList<Connection> GetConnectionsByBank(string bank)
         {
-            lock (_locker)
-            {
-
-                var filteredConnections = _connections.Where(x => x.Bank == bank).ToList();
-                return filteredConnections;
-            }
+            var filteredConnections = _dbContext.Connections.FindSync(c => c.Bank == bank);
+            return filteredConnections.ToList();
         }
     }
 }

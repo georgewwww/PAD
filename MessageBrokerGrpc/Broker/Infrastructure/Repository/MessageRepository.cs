@@ -1,31 +1,34 @@
 ﻿using System.Collections.Concurrent;
+using Broker.Infrastructure.Persistence;
 using Broker.Models;
+using MongoDB.Bson;
+using MongoDB.Driver;
 
 namespace Broker.Infrastructure.Repository
 {
     public class MessageRepository : IMessageRepository
     {
-        private readonly ConcurrentQueue<Message> _messages;
+        private IApplicationDbContext _dbContext { get; }
 
-        public MessageRepository()
+        public MessageRepository(IApplicationDbContext dbContext)
         {
-            _messages = new ConcurrentQueue<Message>();
+            _dbContext = dbContext;
         }
 
         public void Add(Message message)
         {
-            _messages.Enqueue(message);
+            _dbContext.Messages.InsertOne(message);
         }
 
         public Message GetNext()
         {
-            _messages.TryDequeue(out var message);
+            var message = _dbContext.Messages.FindOneAndDelete(new BsonDocument());
             return message;
         }
 
         public bool IsEmpty()
         {
-            return _messages.IsEmpty;
+            return _dbContext.Messages.CountDocuments(new BsonDocument()) == 0;
         }
     }
 }
