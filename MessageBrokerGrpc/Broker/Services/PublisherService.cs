@@ -16,18 +16,29 @@ namespace Broker.Services
             _messageRepository = messageRepository;
         }
 
-        public override Task<PublishReply> PublishMessage(PublishRequest request, ServerCallContext context)
+        public override async Task<PublishReply> PublishMessage(PublishRequest request, ServerCallContext context)
         {
-            var message = new Message(request.Bank, request.Content);
-
-            _messageRepository.Add(message);
-
-            Console.WriteLine($"Received: {request.Bank}, {request.Content}");
-
-            return Task.FromResult(new PublishReply
+            try
             {
-                IsSuccess = true
-            });
+                var message = new Message(request.Bank, request.Content);
+
+                await _messageRepository.Add(message, context.CancellationToken);
+
+                Console.WriteLine($"Received: {request.Bank}, {request.Content}");
+
+                return await Task.FromResult(new PublishReply
+                {
+                    IsSuccess = true
+                });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Publishing gRPC message: {e.Message}");
+                return await Task.FromResult(new PublishReply
+                {
+                    IsSuccess = false
+                });
+            }
         }
     }
 }
