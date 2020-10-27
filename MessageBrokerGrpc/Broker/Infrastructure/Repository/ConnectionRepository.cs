@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Broker.Infrastructure.Persistence;
 using Broker.Models;
 using MongoDB.Driver;
@@ -14,20 +16,20 @@ namespace Broker.Infrastructure.Repository
             _dbContext = dbContext;
         }
 
-        public void Add(Connection connection)
+        public async Task Add(Connection connection, CancellationToken cancellationToken)
         {
-            _dbContext.Connections.InsertOne(connection);
+            await _dbContext.Connections.InsertOneAsync(connection, cancellationToken: cancellationToken);
         }
 
-        public void Remove(string address)
+        public async Task Remove(string address, CancellationToken cancellationToken)
         {
             var deleteFilter = Builders<Connection>.Filter.Eq(c => c.Address, address);
-            _dbContext.Connections.DeleteOne(deleteFilter);
+            await _dbContext.Connections.DeleteOneAsync(deleteFilter, cancellationToken: cancellationToken);
         }
 
-        public IList<Connection> GetConnectionsByBank(string bank)
+        public async Task<IList<Connection>> GetConnectionsByBank(string bank, CancellationToken cancellationToken)
         {
-            var filteredConnections = _dbContext.Connections.FindSync(c => c.Bank == bank);
+            var filteredConnections = await _dbContext.Connections.FindAsync(c => c.Bank == bank, cancellationToken: cancellationToken);
             return filteredConnections.ToList();
         }
     }

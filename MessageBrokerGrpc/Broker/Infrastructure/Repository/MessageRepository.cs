@@ -1,4 +1,6 @@
 ﻿using System.Collections.Concurrent;
+using System.Threading;
+using System.Threading.Tasks;
 using Broker.Infrastructure.Persistence;
 using Broker.Models;
 using MongoDB.Bson;
@@ -15,20 +17,24 @@ namespace Broker.Infrastructure.Repository
             _dbContext = dbContext;
         }
 
-        public void Add(Message message)
+        public async Task Add(Message message, CancellationToken cancellationToken)
         {
-            _dbContext.Messages.InsertOne(message);
+            var filter = Builders<Message>.Filter.Eq(m => m.Bank, message.Bank);
+
+            await _dbContext.Messages.ReplaceOneAsync(filter, message, new ReplaceOptions { IsUpsert = true, },
+                cancellationToken);
         }
 
-        public Message GetNext()
+        public async Task<Message> GetNext(CancellationToken cancellationToken)
         {
-            var message = _dbContext.Messages.FindOneAndDelete(new BsonDocument());
-            return message;
+            var message = _dbContext.Messages.FindOneAndDeleteAsync(new BsonDocument(), cancellationToken: cancellationToken);
+            return await message;
         }
 
-        public bool IsEmpty()
+        public async Task<bool> IsEmpty(CancellationToken cancellationToken)
         {
-            return _dbContext.Messages.CountDocuments(new BsonDocument()) == 0;
+            var count = await _dbContext.Messages.CountDocumentsAsync(new BsonDocument(), cancellationToken: cancellationToken);
+            return count == 0;
         }
     }
 }

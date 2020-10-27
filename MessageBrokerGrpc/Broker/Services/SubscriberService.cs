@@ -16,17 +16,28 @@ namespace Broker.Services
             _connectionRepository = connectionRepository;
         }
 
-        public override Task<SubscribeReply> Subscribe(SubscribeRequest request, ServerCallContext context)
+        public override async Task<SubscribeReply> Subscribe(SubscribeRequest request, ServerCallContext context)
         {
-            Console.WriteLine($"New client subscribed: {request.Address} {request.Bank}");
-
-            var connection = new Connection(request.Address, request.Bank);
-            _connectionRepository.Add(connection);
-
-            return Task.FromResult(new SubscribeReply
+            try
             {
-                IsSuccess = true
-            });
+                Console.WriteLine($"New client subscribed: {request.Address} {request.Bank}");
+
+                var connection = new Connection(request.Address, request.Bank);
+                await _connectionRepository.Add(connection, context.CancellationToken);
+
+                return await Task.FromResult(new SubscribeReply
+                {
+                    IsSuccess = true
+                });
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine($"Publishing gRPC message: {e.Message}");
+                return await Task.FromResult(new SubscribeReply
+                {
+                    IsSuccess = false
+                });
+            }
         }
     }
 }

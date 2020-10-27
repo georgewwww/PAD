@@ -11,7 +11,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace Broker.Services
 {
-    public class SenderWorker : IHostedService, IDisposable
+    public class SenderWorker : IHostedService
     {
         private Timer _timer;
         private const int TimeToWait = 2000;
@@ -36,7 +36,11 @@ namespace Broker.Services
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _timer = new Timer(DoSendWork, null, 0, TimeToWait);
+            _timer = new Timer(async o =>
+            {
+                await DoSendWork(cancellationToken);
+            }, null, 0, TimeToWait);
+
             return Task.CompletedTask;
         }
 
@@ -46,26 +50,26 @@ namespace Broker.Services
             return Task.CompletedTask;
         }
 
-        private void DoSendWork(object state)
+        private async Task DoSendWork(CancellationToken cancellationToken)
         {
-            var isEmptyMessages = _messageRepository.IsEmpty();
+            var isEmptyMessages = await _messageRepository.IsEmpty(cancellationToken);
             if (isEmptyMessages) return;
 
-            var message = _messageRepository.GetNext();
+            var message = await _messageRepository.GetNext(cancellationToken);
             if (message != null)
             {
-                var connections = _connectionRepository.GetConnectionsByBank(message.Bank);
+                var connections = await _connectionRepository.GetConnectionsByBank(message.Bank, cancellationToken);
 
                 if (connections.Count == 0)
                 {
-                    _messageRepository.Add(message);
+                    await _messageRepository.Add(message, cancellationToken);
                 }
 
                 foreach (var connection in connections)
                 {
                     var channel = GrpcChannel.ForAddress(connection.Address, new GrpcChannelOptions { HttpHandler = _httpHandler });
                     var client = new Notifier.NotifierClient(channel);
-                    var request = new NotifyRequest { Bank = message.Bank, Content =  message.Rates };
+                    var request = new NotifyRequest { Bank = message.Bank, Content = message.Rates };
 
                     try
                     {
@@ -76,7 +80,7 @@ namespace Broker.Services
                     {
                         if (e.StatusCode == StatusCode.Internal)
                         {
-                            _connectionRepository.Remove(connection.Address);
+                            await _connectionRepository.Remove(connection.Address, cancellationToken);
                         }
 
                         Console.WriteLine($"Details: {e.Status.Detail}");
@@ -85,7 +89,5 @@ namespace Broker.Services
                 }
             }
         }
-
-        public void Dispose() => _timer?.Dispose();
     }
 }
