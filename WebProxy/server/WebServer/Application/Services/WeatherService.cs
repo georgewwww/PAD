@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace WebServer.Application.Services
 {
-    public class WetherService
+    public class WeatherService
     {
     }
 }

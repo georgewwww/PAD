@@ -5,11 +5,9 @@ VisualStudioVersion = 16.0.30413.136
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebServer", "WebServer\WebServer.csproj", "{5D5F6954-FC0F-451F-9421-620DFADBBD25}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartProxy", "SmartProxy\SmartProxy.csproj", "{3F009067-4A87-4363-A40C-44DD6ED1359D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmartProxy", "SmartProxy\SmartProxy.csproj", "{3F009067-4A87-4363-A40C-44DD6ED1359D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBroker", "MessageBroker\MessageBroker.csproj", "{A9F3EABC-6192-40A0-B8B6-0DD3C760F96F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestAPp", "TestAPp\TestAPp.csproj", "{28BFD2A0-4FD9-4FAA-A49C-86B04CA6B3D4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MessageBroker", "MessageBroker\MessageBroker.csproj", "{A9F3EABC-6192-40A0-B8B6-0DD3C760F96F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,10 +27,6 @@ Global
 		{A9F3EABC-6192-40A0-B8B6-0DD3C760F96F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A9F3EABC-6192-40A0-B8B6-0DD3C760F96F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A9F3EABC-6192-40A0-B8B6-0DD3C760F96F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{28BFD2A0-4FD9-4FAA-A49C-86B04CA6B3D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{28BFD2A0-4FD9-4FAA-A49C-86B04CA6B3D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{28BFD2A0-4FD9-4FAA-A49C-86B04CA6B3D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{28BFD2A0-4FD9-4FAA-A49C-86B04CA6B3D4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

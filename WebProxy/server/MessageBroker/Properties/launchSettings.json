@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "MessageBroker": {
+      "commandName": "Project"
+    }
+  }
+}

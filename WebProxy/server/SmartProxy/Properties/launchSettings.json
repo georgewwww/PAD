@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "SmartProxy": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "RedisHost": "localhost:6379",
+        "LoadBalancerListenUrl": "http://*:8080/",
+        "MessageBrokerConnectionString": "Host=localhost;Username=root;Password=root"
+      }
+    }
+  }
+}

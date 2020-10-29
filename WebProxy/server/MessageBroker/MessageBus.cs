@@ -2,6 +2,7 @@
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
+using System.Data.Common;
 using System.Text;
 
 namespace MessageBroker
@@ -12,14 +13,19 @@ namespace MessageBroker
         private readonly IConnection connection;
         private readonly IModel channel;
 
-        public MessageBus()
+        public MessageBus(string connectionString)
         {
+            var dbConnectionStringBuilder = new DbConnectionStringBuilder
+            {
+                ConnectionString = connectionString
+            };
+
             connectionFactory = new ConnectionFactory
             {
-                HostName = "localhost",
+                HostName = dbConnectionStringBuilder["Host"].ToString(),
                 Port = 5672,
-                UserName = "root",
-                Password = "root"
+                UserName = dbConnectionStringBuilder["Username"].ToString(),
+                Password = dbConnectionStringBuilder["Password"].ToString()
             };
             connection = connectionFactory.CreateConnection();
             channel = connection.CreateModel();
