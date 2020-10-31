@@ -6,11 +6,16 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using System;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using WebServer.Application;
+using WebServer.Application.Abstractions;
+using WebServer.Application.Services;
+using WebServer.Infrastructure.Persistence;
+using WebServer.Infrastructure.Repository;
 
 namespace WebServer
 {
@@ -27,6 +32,17 @@ namespace WebServer
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+
+            services.Configure<ConnectionDatabaseSettings>(Configuration.GetSection("ConnectionDatabaseSettings"));
+            services.AddSingleton<IConnectionDatabaseSettings>(sp =>
+                sp.GetRequiredService<IOptions<ConnectionDatabaseSettings>>().Value);
+
+            services.AddSingleton<IMovieService, MovieService>();
+            services.AddSingleton<IActorService, ActorService>();
+
+            services.AddSingleton<IApplicationDbContext, ApplicationDbContext>();
+            services.AddSingleton<IActorRepository, ActorSyncRepository>();
+            services.AddSingleton<IMovieRepository, MovieSyncRepository>();
 
             services.AddSingleton(new ServerDescriptor());
             services.AddSingleton(new MessageBus(Configuration.GetConnectionString("MessageBroker")));
