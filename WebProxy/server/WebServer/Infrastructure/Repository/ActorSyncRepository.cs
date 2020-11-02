@@ -1,83 +1,78 @@
-﻿using MongoDB.Bson;
+﻿using MessageBroker;
 using MongoDB.Driver;
 using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+using WebServer.Application;
 using WebServer.Application.Abstractions;
 using WebServer.Domain.Entities;
+using WebServer.Domain.Events;
 
 namespace WebServer.Infrastructure.Repository
 {
-    public class ActorSyncRepository : SyncRepository<Actor>, IActorRepository
+    public class ActorSyncRepository : SyncRepository<Actor, ActorEventEntity>, IActorRepository
     {
         private readonly IApplicationDbContext dbContext;
 
-        public ActorSyncRepository(IApplicationDbContext dbContext)
+        public ActorSyncRepository(
+            IApplicationDbContext dbContext,
+            MessageBus messageBus,
+            ServerDescriptor serverDescriptor) : base(
+                messageBus, serverDescriptor)
         {
             this.dbContext = dbContext;
         }
 
-        public async Task Delete(Guid id, CancellationToken cancellationToken)
+        public override IMongoCollection<Actor> Collection => dbContext.Actors;
+
+        public override FilterDefinition<Actor> DeleteFilter(Guid id) => FilterDef.Eq(a => a.Id, id);
+        public override FilterDefinition<Actor> GetFilter(Guid id) => FilterDef.Eq(a => a.Id, id);
+        public override FilterDefinition<Actor> UpdateGetFilter(Guid id) => FilterDef.Eq(a => a.Id, id);
+        public override UpdateDefinition<Actor> UpdateFilter(Actor entity)
         {
-            var filter = FilterDef.Eq(a => a.Id, id);
-            await dbContext.Actors.DeleteOneAsync(filter, cancellationToken);
+            return UpdateDef.Set(a => a.FullName, entity.FullName)
+                   .Set(a => a.BirthDate, entity.BirthDate)
+                   .Set(a => a.BirthYear, entity.BirthYear)
+                   .Set(a => a.ImageLink, entity.ImageLink)
+                   .Set(a => a.Description, entity.Description);
         }
 
-        public async Task<Actor> Get(Guid id, CancellationToken cancellationToken)
+        public override Actor CreateModel(ActorEventEntity entityEvent)
         {
-            var filter = FilterDef.Eq(a => a.Id, id);
-            var actors = await dbContext.Actors.FindAsync(filter, cancellationToken: cancellationToken);
-            return actors.FirstOrDefault();
-        }
-
-        public async Task<IList<Actor>> Get(CancellationToken cancellationToken)
-        {
-            var actors = await dbContext.Actors.FindAsync(a => true, cancellationToken: cancellationToken);
-            return actors.ToList();
-        }
-
-        public async Task<Actor> Insert(Actor entity, CancellationToken cancellationToken)
-        {
-            await dbContext.Actors.InsertOneAsync(entity, cancellationToken: cancellationToken);
             return new Actor
+            {
+                Id = entityEvent.Id,
+                FullName = entityEvent.FullName,
+                ImageLink = entityEvent.ImageLink,
+                BirthDate = entityEvent.BirthDate,
+                BirthYear = entityEvent.BirthYear,
+                Description = entityEvent.Description
+            };
+        }
+
+        public override ActorEventEntity CreateEventModel(Actor entity)
+        {
+            return new ActorEventEntity
             {
                 Id = entity.Id,
                 FullName = entity.FullName,
+                ImageLink = entity.ImageLink,
                 BirthDate = entity.BirthDate,
                 BirthYear = entity.BirthYear,
-                ImageLink = entity.ImageLink,
                 Description = entity.Description
             };
         }
 
-        public async Task<Actor> Update(Actor entity, CancellationToken cancellationToken)
+        public override void UpdateEntity(ActorEventEntity @event, Actor entity, bool copyId)
         {
-            var updateDefinition = UpdateDef.Set(a => a.FullName, entity.FullName)
-                .Set(a => a.BirthDate, entity.BirthDate)
-                .Set(a => a.BirthYear, entity.BirthYear)
-                .Set(a => a.ImageLink, entity.ImageLink)
-                .Set(a => a.Description, entity.Description);
-
-            var result = await dbContext.Actors.UpdateOneAsync(FilterDef.Eq(a => a.Id, entity.Id),
-                updateDefinition,
-                cancellationToken: cancellationToken);
-
-            if (result.IsAcknowledged && result.ModifiedCount > 0)
+            if (copyId)
             {
-                return new Actor
-                {
-                    Id = entity.Id,
-                    FullName = entity.FullName,
-                    BirthDate = entity.BirthDate,
-                    BirthYear = entity.BirthYear,
-                    ImageLink = entity.ImageLink,
-                    Description = entity.Description
-                };
-            } else
-            {
-                return null;
+                entity.Id = @event.Id;
             }
+
+            entity.FullName = @event.FullName;
+            entity.BirthDate = @event.BirthDate;
+            entity.BirthYear = @event.BirthYear;
+            entity.Description = @event.Description;
+            entity.ImageLink = @event.ImageLink;
         }
 
         protected static FilterDefinitionBuilder<Actor> FilterDef => Builders<Actor>.Filter;

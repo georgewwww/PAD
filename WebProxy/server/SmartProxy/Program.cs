@@ -22,7 +22,7 @@ namespace SmartProxy
             connectionMultiplexer = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable("RedisHost"));
 
             var loadBalancerListener = new LoadBalancerListener(httpListener, loadBalancer, connectionMultiplexer);
-            messageBus.Subscribe<ServerEvent>("server", serverEvent =>
+            messageBus.Subscribe<ServerEvent>("Server", serverEvent =>
             {
                 Console.WriteLine($"Server up: {serverEvent.Url}");
                 loadBalancer.Add(new Uri(serverEvent.Url));

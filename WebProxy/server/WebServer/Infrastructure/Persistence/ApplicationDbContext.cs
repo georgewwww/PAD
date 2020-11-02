@@ -8,12 +8,15 @@ namespace WebServer.Infrastructure.Persistence
     {
         public ApplicationDbContext(IConnectionDatabaseSettings settings)
         {
-            var client = new MongoClient(settings.ConnectionString);
-            IMongoDatabase database = client.GetDatabase(settings.DatabaseName);
-            Actors = database.GetCollection<Actor>(settings.ActorsCollectionName);
-            Movies = database.GetCollection<Movie>(settings.MoviesCollectionName);
+            DatabaseSettings = settings;
+            var client = new MongoClient(DatabaseSettings.ConnectionString);
+            Database = client.GetDatabase(DatabaseSettings.DatabaseName);
+            Actors = Database.GetCollection<Actor>(DatabaseSettings.ActorsCollectionName);
+            Movies = Database.GetCollection<Movie>(DatabaseSettings.MoviesCollectionName);
         }
 
+        public IMongoDatabase Database { get; }
+        public IConnectionDatabaseSettings DatabaseSettings { get; }
         public IMongoCollection<Actor> Actors { get; }
         public IMongoCollection<Movie> Movies { get; }
     }

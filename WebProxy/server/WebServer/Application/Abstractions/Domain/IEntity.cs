@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace WebServer.Application.Abstractions
+namespace WebServer.Application.Abstractions.Domain
 {
     public interface IEntity
     {

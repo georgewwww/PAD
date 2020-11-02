@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using WebServer.Application.Abstractions.Domain;
 
 namespace WebServer.Application.Abstractions
 {

@@ -1,22 +1,15 @@
 ﻿using System;
-using MongoDB.Bson.Serialization.Attributes;
 using WebServer.Application.Abstractions.Domain;
 
-namespace WebServer.Domain.Entities
+namespace WebServer.Domain.Events
 {
-    public class Actor : IEntity
+    public class ActorEventEntity : IEventEntity
     {
-        [BsonId]
         public Guid Id { get; set; }
-        [BsonElement]
         public string FullName { get; set; }
-        [BsonElement]
         public string ImageLink { get; set; }
-        [BsonElement]
         public int BirthYear { get; set; }
-        [BsonElement]
         public string BirthDate { get; set; }
-        [BsonElement]
         public string Description { get; set; }
     }
 }

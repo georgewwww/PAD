@@ -13,7 +13,9 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using WebServer.Application;
 using WebServer.Application.Abstractions;
+using WebServer.Application.Abstractions.Domain;
 using WebServer.Application.Services;
+using WebServer.Domain.Events;
 using WebServer.Infrastructure.Persistence;
 using WebServer.Infrastructure.Repository;
 
@@ -57,6 +59,7 @@ namespace WebServer
             try
             {
                 Task.Factory.StartNew(() => EnqueueServer(app));
+                StartSync(app);
             }
             catch (Exception e)
             {
@@ -68,7 +71,6 @@ namespace WebServer
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseHttpsRedirection();
             app.UseRouting();
             app.UseAuthorization();
 
@@ -88,13 +90,33 @@ namespace WebServer
             });
         }
 
+        private void StartSync(IApplicationBuilder app)
+        {
+            var messageBus = app.ApplicationServices.GetService<MessageBus>();
+            var actorRepository = app.ApplicationServices.GetService<IActorRepository>();
+            var movieRepository = app.ApplicationServices.GetService<IMovieRepository>();
+
+            Console.WriteLine("> Registering actor synchronizer");
+            RegisterSync(actorRepository, messageBus);
+            Console.WriteLine("> Registering movie synchronizer");
+            RegisterSync(movieRepository, messageBus);
+        }
+
+        private void RegisterSync<T, TEvent>(IEventSynchronizer<T, TEvent> eventSynchronizer, MessageBus messageBus)
+            where T : IEntity where TEvent : IEventEntity
+        {
+            messageBus.Subscribe<EntityInsertEvent<TEvent>>(eventSynchronizer.InsertQueue, eventSynchronizer.OnInsertEvent);
+            messageBus.Subscribe<EntityUpdateEvent<TEvent>>(eventSynchronizer.UpdateQueue, eventSynchronizer.OnUpdateEvent);
+            messageBus.Subscribe<EntityDeleteEvent>(eventSynchronizer.DeleteQueue, eventSynchronizer.OnDeleteEvent);
+        }
+
         private void EnqueueServer(IApplicationBuilder app)
         {
             var messageBus = app.ApplicationServices.GetService<MessageBus>();
             var serviceDescriptor = app.ApplicationServices.GetService<ServerDescriptor>();
 
             serviceDescriptor.Url = GetServerAddress(app);
-            messageBus.Publish("server", new ServerEvent
+            messageBus.Publish("Server", new ServerEvent
             {
                 Url = serviceDescriptor.Url
             });

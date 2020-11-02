@@ -1,92 +1,90 @@
-﻿using MongoDB.Driver;
+﻿using MessageBroker;
+using MongoDB.Driver;
 using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+using WebServer.Application;
 using WebServer.Application.Abstractions;
 using WebServer.Domain.Entities;
+using WebServer.Domain.Events;
 
 namespace WebServer.Infrastructure.Repository
 {
-    public class MovieSyncRepository : SyncRepository<Movie>, IMovieRepository
+    public class MovieSyncRepository : SyncRepository<Movie, MovieEventEntity>, IMovieRepository
     {
         private readonly IApplicationDbContext dbContext;
 
-        public MovieSyncRepository(IApplicationDbContext dbContext)
+        public MovieSyncRepository(
+            IApplicationDbContext dbContext,
+            MessageBus messageBus,
+            ServerDescriptor serverDescriptor) : base(
+                messageBus, serverDescriptor)
         {
             this.dbContext = dbContext;
         }
 
-        public async Task Delete(Guid id, CancellationToken cancellationToken)
-        {
-            var filter = FilterDef.Eq(a => a.Id, id);
-            await dbContext.Movies.DeleteOneAsync(filter, cancellationToken);
-        }
+        public override IMongoCollection<Movie> Collection => dbContext.Movies;
 
-        public async Task<Movie> Get(Guid id, CancellationToken cancellationToken)
+        public override FilterDefinition<Movie> DeleteFilter(Guid id) => FilterDef.Eq(a => a.Id, id);
+        public override FilterDefinition<Movie> GetFilter(Guid id) => FilterDef.Eq(a => a.Id, id);
+        public override FilterDefinition<Movie> UpdateGetFilter(Guid id) => FilterDef.Eq(a => a.Id, id);
+        public override UpdateDefinition<Movie> UpdateFilter(Movie entity)
         {
-            var filter = FilterDef.Eq(a => a.Id, id);
-            var actors = await dbContext.Movies.FindAsync(filter, cancellationToken: cancellationToken);
-            return actors.FirstOrDefault();
-        }
-
-        public async Task<IList<Movie>> Get(CancellationToken cancellationToken)
-        {
-            var movies = await dbContext.Movies.FindAsync(a => true, cancellationToken: cancellationToken);
-            return movies.ToList();
-        }
-
-        public async Task<Movie> Insert(Movie entity, CancellationToken cancellationToken)
-        {
-            await dbContext.Movies.InsertOneAsync(entity, cancellationToken: cancellationToken);
-            return new Movie
-            {
-                Id = entity.Id,
-                Name = entity.Name,
-                PosterLink = entity.PosterLink,
-                PremYear = entity.PremYear,
-                Genre = entity.Genre,
-                Time = entity.Time,
-                Score = entity.Score,
-                Description = entity.Description
-            };
-        }
-
-        public async Task<Movie> Update(Movie entity, CancellationToken cancellationToken)
-        {
-            var updateDefinition = UpdateDef.Set(a => a.Name, entity.Name)
+            return UpdateDef.Set(a => a.Name, entity.Name)
                 .Set(a => a.PosterLink, entity.PosterLink)
                 .Set(a => a.PremYear, entity.PremYear)
                 .Set(a => a.Genre, entity.Genre)
                 .Set(a => a.Time, entity.Time)
                 .Set(a => a.Score, entity.Score)
                 .Set(a => a.Description, entity.Description);
+        }
 
-            var result = await dbContext.Movies.UpdateOneAsync(FilterDef.Eq(a => a.Id, entity.Id),
-                updateDefinition,
-                cancellationToken: cancellationToken);
+        public override Movie CreateModel(MovieEventEntity entityEvent)
+        {
+            return new Movie
+            {
+                Id = entityEvent.Id,
+                Name = entityEvent.Name,
+                PosterLink = entityEvent.PosterLink,
+                Genre = entityEvent.Genre,
+                PremYear = entityEvent.PremYear,
+                Time = entityEvent.Time,
+                Score = entityEvent.Score,
+                Description = entityEvent.Description
+            };
+        }
 
-            if (result.IsAcknowledged && result.ModifiedCount > 0)
+        public override MovieEventEntity CreateEventModel(Movie entity)
+        {
+            return new MovieEventEntity
             {
-                return new Movie
-                {
-                    Id = entity.Id,
-                    Name = entity.Name,
-                    PosterLink = entity.PosterLink,
-                    PremYear = entity.PremYear,
-                    Genre = entity.Genre,
-                    Time = entity.Time,
-                    Score = entity.Score,
-                    Description = entity.Description
-                };
-            }
-            else
+                Id = entity.Id,
+                Name = entity.Name,
+                PosterLink = entity.PosterLink,
+                Genre = entity.Genre,
+                PremYear = entity.PremYear,
+                Time = entity.Time,
+                Score = entity.Score,
+                Description = entity.Description
+            };
+        }
+
+        public override void UpdateEntity(MovieEventEntity @event, Movie entity, bool copyId)
+        {
+            if (copyId)
             {
-                return null;
+                entity.Id = @event.Id;
             }
+
+            entity.Name = @event.Name;
+            entity.PosterLink = @event.PosterLink;
+            entity.PremYear = @event.PremYear;
+            entity.Score = @event.Score;
+            entity.Time = @event.Time;
+            entity.Genre = @event.Genre;
+            entity.Description = @event.Description;
         }
 
         protected static FilterDefinitionBuilder<Movie> FilterDef => Builders<Movie>.Filter;
         protected static UpdateDefinitionBuilder<Movie> UpdateDef => Builders<Movie>.Update;
+
     }
 }
