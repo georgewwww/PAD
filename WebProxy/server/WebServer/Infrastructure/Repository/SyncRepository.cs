@@ -96,42 +96,44 @@ namespace WebServer.Infrastructure.Repository
             }
         }
 
-        public void OnInsertEvent(EntityInsertEvent<TEvent> @event)
+        public async void OnInsertEvent(EntityInsertEvent<TEvent> @event)
         {
             if (@event.EmittedServerId == serverDescriptor.Id)
             {
-                Console.WriteLine("Skipping because emitter server id matches current");
+                Console.WriteLine("Skipping insert because emitter server id matches current");
             } else
             {
                 var entity = CreateModel(@event.Entity);
+                Console.WriteLine("Inserting entity to database: " + entity.Id);
 
-                Insert(entity, new CancellationTokenSource().Token).Wait();
+                await Insert(entity, CancellationToken.None, false);
             }
         }
 
-        public void OnUpdateEvent(EntityUpdateEvent<TEvent> @event)
+        public async void OnUpdateEvent(EntityUpdateEvent<TEvent> @event)
         {
             if (@event.EmittedServerId == serverDescriptor.Id)
             {
-                Console.WriteLine("Skipping because emitter server id matches current");
+                Console.WriteLine("Skipping update because emitter server id matches current");
             } else
             {
                 var eventEntity = @event.Entity;
-                var entity = Get(eventEntity.Id, new CancellationTokenSource().Token).Result;
+                var entity = await Get(eventEntity.Id, new CancellationTokenSource().Token);
+                Console.WriteLine("Updating entity from database: " + entity.Id);
                 UpdateEntity(eventEntity, entity, false);
-                Update(entity, new CancellationTokenSource().Token, false).Wait();
+                await Update(entity, CancellationToken.None, false);
             }
         }
 
-        public void OnDeleteEvent(EntityDeleteEvent @event)
+        public async void OnDeleteEvent(EntityDeleteEvent @event)
         {
             if (@event.EmittedServerId == serverDescriptor.Id)
             {
-                Console.WriteLine("Skipping because emitter server id matches current");
+                Console.WriteLine("Skipping delete because emitter server id matches current");
             } else
             {
-                var entity = Get(@event.Id, new CancellationTokenSource().Token).Result;
-                Delete(entity.Id, new CancellationTokenSource().Token).Wait();
+                Console.WriteLine("Deleting entity from database: " + @event.Id);
+                await Delete(@event.Id, CancellationToken.None, false);
             }
         }
 

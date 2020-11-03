@@ -7,10 +7,26 @@ services:
       dockerfile: WebServer.Dockerfile
     environment:
       ConnectionDatabaseSettings:ConnectionString: mongodb://mongo:27017/db_md
+      ConnectionDatabaseSettings:DatabaseName: db_md
       ConnectionStrings:MessageBroker: Host=rabbitmq;Port=5672;Username=root;Password=root
     ports:
       - 8000:80
       - 8001:443
+    depends_on:
+      - rabbitmq
+      - mongo
+
+  web_us:
+    build:
+      context: ./
+      dockerfile: WebServer.Dockerfile
+    environment:
+      ConnectionDatabaseSettings:ConnectionString: mongodb://mongo:27017/db_us
+      ConnectionDatabaseSettings:DatabaseName: db_us
+      ConnectionStrings:MessageBroker: Host=rabbitmq;Port=5672;Username=root;Password=root
+    ports:
+      - 9000:80
+      - 9001:443
     depends_on:
       - rabbitmq
       - mongo

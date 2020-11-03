@@ -5,6 +5,7 @@ using RabbitMQ.Client.Events;
 using System;
 using System.Data.Common;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace MessageBroker
 {
@@ -29,7 +30,8 @@ namespace MessageBroker
             {
                 HostName = host,
                 UserName = dbConnectionStringBuilder["Username"].ToString(),
-                Password = dbConnectionStringBuilder["Password"].ToString()
+                Password = dbConnectionStringBuilder["Password"].ToString(),
+                DispatchConsumersAsync = true
             };
             connection = connectionFactory.CreateConnection();
             channel = connection.CreateModel();
@@ -53,15 +55,19 @@ namespace MessageBroker
         {
             QueueDeclare(QueueName);
             ExchangeDeclare(exchange);
-            BindQueue(exchange, QueueName);
+            BindQueue<T>(exchange, QueueName);
 
-            var consumer = new EventingBasicConsumer(channel);
-            consumer.Received += (model, args) =>
+            var consumer = new AsyncEventingBasicConsumer(channel);
+            consumer.Received += async (model, args) =>
             {
                 var message = Encoding.UTF8.GetString(args.Body.ToArray());
 
+                Console.WriteLine($"Publish to exchange {exchange} the following " + message);
+
                 var obj = JsonConvert.DeserializeObject<T>(message);
+
                 onEvent(obj);
+                await Task.Yield();
             };
 
             channel.BasicConsume(queue: QueueName,
@@ -69,7 +75,7 @@ namespace MessageBroker
                 consumer: consumer);
         }
 
-        private void BindQueue(string exchange, string queueName)
+        private void BindQueue<T>(string exchange, string queueName)
         {
             channel.QueueBind(
                 queue: queueName,
