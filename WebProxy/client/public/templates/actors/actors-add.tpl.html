@@ -1,0 +1,21 @@
+<div class="container mt-30 mb-30">
+    <div class="actor-input">
+        <div class="actor-name" style="margin-left: 20px;">Actor name and surname</div>
+        <input type="text" ng-model="actor.fullName">
+        <div class="actor-image" style="margin-left: 20px;">Image link</div>
+        <input type="text" ng-model="actor.imageLink">
+        <div class="row">
+            <div class="col-6">
+                <div class="actor-birh" style="margin-left: 20px;">Birth year</div>
+                <input type="text" ng-model="actor.birthYear">
+            </div>
+            <div class="col">
+                <div class="actor-date" tyle="margin-left: 20px;">Birth date</div>
+                <input type="text" ng-model="actor.birthDate">
+            </div>
+        </div>
+        <div class="actor-description" style="margin-left: 20px;">Description</div>
+        <textarea ng-model="actor.description" class="materialize-textarea"></textarea>
+    </div>
+    <input type="submit" class="waves-effect waves-light btn" ng-click="adc.upload(actor)" value="Save" />
+</div>

@@ -1,0 +1,18 @@
+<div class="container mt-30">
+    <div class="fixed-action-btn horizontal click-to-toggle upload">
+        <a href="#!/actors/upload" class="btn-floating btn-large waves-effect waves-light red">
+            <i class="material-icons">add</i>
+        </a>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-2" ng-repeat="actor in actor.actors">
+            <div class="actor-poster">
+                <a href="#!/actors/details/{{actor.id}}">
+                    <img class="actor-image" src={{actor.imageLink}}>
+                </a>
+                <div class="actor-title">{{actor.fullName}}</div>
+            </div>
+        </div>
+    </div>
+</div>

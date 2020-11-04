@@ -1,0 +1,33 @@
+<div class="container mt-30 mb-30">
+    <div class="movie-input">
+        <input hidden ng-model="a.movie.id" ng-pattern="{{a.movie.id}}">
+        <div class="movie-text">Movie name</div>
+        <input type="text" ng-model="m.movie.name" ng-pattern="{{m.movie.name}}">
+        <div class="movie-text">Poster link</div>
+        <input type="text" ng-model="m.movie.posterLink" ng-pattern="{{m.movie.posterLink}}">
+        <div class="row">
+            <div class="col-6">
+                <div class="movie-text">Genre</div>
+                <input type="text" ng-model="m.movie.genre" ng-pattern="{{m.movie.genre}}">
+            </div>
+            <div class="col-6">
+                <div class="movie-text">Premiere year</div>
+                <input type="text" ng-model="m.movie.premYear" ng-pattern="{{m.movie.premYear}}">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-6">
+                <div class="movie-text">Duration</div>
+                <input type="text" ng-model="m.movie.time" ng-pattern="{{m.movie.time}}">
+            </div>
+            <div class="col-6">
+                <div class="movie-text">Score</div>
+                <input type="text" ng-model="m.movie.score" ng-pattern="{{m.movie.score}}">
+            </div>
+        </div>
+        <div class="movie-text">Description</div>
+        <textarea class="materialize-textarea" ng-model="m.movie.description" ng-pattern="{{m.movie.description}}"></textarea>
+    </div>
+
+    <input type="submit" class="waves-effect waves-light btn" ng-click="m.update(m.movie)" value="Save" style="margin-bottom: 20px;" />
+</div>

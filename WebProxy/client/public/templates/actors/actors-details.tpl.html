@@ -1,0 +1,22 @@
+<div class="container mt-30  mb-30">
+    <div class="actor-details">
+        <div class="row">
+            <div class="col-2">
+                <img class="actor-image" src={{ad.actor.imageLink}}>
+            </div>
+            <div class="col">
+                <div class="head">{{ad.actor.fullName}}</div>
+                <div class="actor-data">{{ad.actor.birthYear}} · {{ad.actor.birthDate}}</div>
+
+                <div class="actor-text">
+                    <p>{{ad.actor.description}}</p>
+                    <a href="#!/actors/edit/{{ad.actor.id}}">
+                        <input type="submit" class="waves-effect waves-light btn" value="Edit" />
+                    </a>
+                    <input type="submit" class="waves-effect waves-light btn red" ng-click="ad.delete(ad.actor.id)" value="Delete" />
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>

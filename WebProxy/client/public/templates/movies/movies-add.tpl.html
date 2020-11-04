@@ -1,0 +1,32 @@
+<div class="container mt-30 mb-30">
+    <div class="movie-input">
+        <div class="movie-text" style="margin-left: 20px;">Movie name</div>
+        <input type="text" ng-model="movie.name">
+        <div class="movie-text" style="margin-left: 20px;">Poster link</div>
+        <input type="text" ng-model="movie.posterLink">
+        <div class="row">
+            <div class="col-6">
+                <div class="movie-text" style="margin-left: 20px;">Genre</div>
+                <input type="text" ng-model="movie.genre">
+            </div>
+            <div class="col">
+                <div class="movie-text" style="margin-left: 20px;">Premiere year</div>
+                <input type="text" ng-model="movie.premYear">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-6">
+                <div class="movie-text" style="margin-left: 20px;">Time</div>
+                <input type="text" ng-model="movie.Time">
+            </div>
+            <div class="col">
+                <div class="movie-text" style="margin-left: 20px;">Score</div>
+                <input type="text" ng-model="movie.score">
+            </div>
+        </div>
+        <div class="movie-text" style="margin-left: 20px;">Description</div>
+        <textarea class="materialize-textarea" ng-model="movie.description"></textarea>
+    </div>
+
+    <input type="submit" class="waves-effect waves-light btn" ng-click="adm.upload(movie)" value="Save" style="left: 25px; margin-bottom: 20px;" />
+</div>

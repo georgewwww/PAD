@@ -1,0 +1,25 @@
+<div class="container mt-30 mb-30">
+    <div class="movie-details">
+        <div class="row">
+            <div class="col-2">
+                <img class="movie-image" src={{md.movie.posterLink}}>
+            </div>
+            <div class="col">
+                <div class="head">{{md.movie.name}}</div>
+                <div class="movie-data">{{md.movie.genre}}  ·  {{md.movie.premYear}}  ·  {{md.movie.time}}</div>
+                <div class="star">
+                    <i class="material-icons">star</i>
+                    {{md.movie.score}}
+                </div>
+                <div class="movie-text">
+                    <p>{{md.movie.description}}</p>
+                    <a href="#!/movies/edit/{{md.movie.id}}">
+                        <input type="submit" class="waves-effect waves-light btn" value="Edit" />
+                    </a>
+                    <input type="submit" class="waves-effect waves-light btn red" ng-click="md.delete(md.movie.id)" value="Delete" />
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>

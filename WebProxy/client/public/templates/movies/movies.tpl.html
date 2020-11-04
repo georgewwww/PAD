@@ -1,0 +1,19 @@
+<div class="container mt-30">
+    <div class="fixed-action-btn horizontal click-to-toggle upload">
+        <a href="#!/movies/upload" class="btn-floating btn-large waves-effect waves-light red">
+            <i class="material-icons">add</i>
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-2" ng-repeat="movie in movie.movies">
+            <div class="movie-poster">
+                <a href="#!/movies/details/{{movie.id}}">
+                    <img class="movie-image" src={{movie.posterLink}}>
+                </a>
+                <div class="movie-title">{{movie.name}}</div>
+                <span class="movie-genre">{{movie.genre}}</span>
+            </div>
+        </div>
+    </div>
+</div>
