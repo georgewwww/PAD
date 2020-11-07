@@ -6,11 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MessageBroker\MessageBroker.csproj" />
+    <PackageReference Include="StackExchange.Redis" Version="2.1.58" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="StackExchange.Redis" Version="2.1.58" />
+    <ProjectReference Include="..\MessageBroker_old\MessageBroker_old.csproj" />
   </ItemGroup>
 
 </Project>

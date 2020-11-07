@@ -1,5 +1,6 @@
 ﻿using MessageBroker;
 using MongoDB.Driver;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -8,6 +9,7 @@ using WebServer.Application;
 using WebServer.Application.Abstractions;
 using WebServer.Application.Abstractions.Domain;
 using WebServer.Domain.Events;
+using WebServer.Infrastructure.gRPC;
 
 namespace WebServer.Infrastructure.Repository
 {
@@ -15,15 +17,15 @@ namespace WebServer.Infrastructure.Repository
         where T : class, IEntity
         where TEvent : IEventEntity
     {
-        private readonly MessageBus messageBroker;
         private readonly ServerDescriptor serverDescriptor;
+        private readonly IMessageBrokerServiceClient messageBrokerServiceClient;
 
         public SyncRepository(
-            MessageBus messageBroker,
-            ServerDescriptor serverDescriptor)
+            ServerDescriptor serverDescriptor,
+            IMessageBrokerServiceClient messageBrokerServiceClient)
         {
-            this.messageBroker = messageBroker;
             this.serverDescriptor = serverDescriptor;
+            this.messageBrokerServiceClient = messageBrokerServiceClient;
         }
 
         public string InsertQueue => typeof(T).Name + "-insert";
@@ -45,14 +47,21 @@ namespace WebServer.Infrastructure.Repository
 
         public async Task<T> Insert(T entity, CancellationToken cancellationToken, bool createEvent = true)
         {
-            await Collection.InsertOneAsync(entity, cancellationToken: cancellationToken);
+            //await Collection.InsertOneAsync(entity, cancellationToken: cancellationToken);
             if (createEvent)
             {
-                messageBroker.Publish(InsertQueue, new EntityInsertEvent<TEvent>
-                {
-                    EmittedServerId = serverDescriptor.Id,
-                    Entity = CreateEventModel(entity)
-                });
+                var entityPayload = JsonConvert.SerializeObject(entity);
+
+                await messageBrokerServiceClient.Publish(
+                    serverDescriptor.Id.ToString(),
+                    string.Concat(nameof(Insert).ToLower(), "#", typeof(T).Name.ToLower()),
+                    entityPayload);
+                
+                //messageBroker.Publish(InsertQueue, new EntityInsertEvent<TEvent>
+                //{
+                //    EmittedServerId = serverDescriptor.Id,
+                //    Entity = CreateEventModel(entity)
+                //});
             }
             return entity;
         }
@@ -68,11 +77,11 @@ namespace WebServer.Infrastructure.Repository
             {
                 if (createEvent)
                 {
-                    messageBroker.Publish(UpdateQueue, new EntityUpdateEvent<TEvent>
-                    {
-                        EmittedServerId = serverDescriptor.Id,
-                        Entity = CreateEventModel(entity)
-                    });
+                    //messageBroker.Publish(UpdateQueue, new EntityUpdateEvent<TEvent>
+                    //{
+                    //    EmittedServerId = serverDescriptor.Id,
+                    //    Entity = CreateEventModel(entity)
+                    //});
                 }
                 return entity;
             }
@@ -88,11 +97,11 @@ namespace WebServer.Infrastructure.Repository
             await Collection.DeleteOneAsync(filter, cancellationToken);
             if (createEvent)
             {
-                messageBroker.Publish(DeleteQueue, new EntityDeleteEvent
-                {
-                    EmittedServerId = serverDescriptor.Id,
-                    Id = id
-                });
+                //messageBroker.Publish(DeleteQueue, new EntityDeleteEvent
+                //{
+                //    EmittedServerId = serverDescriptor.Id,
+                //    Id = id
+                //});
             }
         }
 

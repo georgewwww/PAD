@@ -1,0 +1,29 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "Common";
+
+package MessageBrokerNamespace;
+
+service MessageBroker {
+  rpc SubscribeService (SubscribeRequestMessage) returns (SubscribeResponseMessage);
+  rpc PublishInsert (RequestMessage) returns (ResponseMessage);
+}
+
+message SubscribeRequestMessage {
+  string ServerId = 1;
+  string ServerHost = 2;
+}
+
+message SubscribeResponseMessage {
+  bool Success = 1;
+}
+
+message RequestMessage {
+	string EmittedServerId = 1;
+	string Descriptive = 2;
+	string Payload = 3;
+}
+
+message ResponseMessage {
+	bool Success = 1;
+}

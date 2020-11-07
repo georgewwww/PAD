@@ -16,6 +16,7 @@ using WebServer.Application.Abstractions;
 using WebServer.Application.Abstractions.Domain;
 using WebServer.Application.Services;
 using WebServer.Domain.Events;
+using WebServer.Infrastructure.gRPC;
 using WebServer.Infrastructure.Persistence;
 using WebServer.Infrastructure.Repository;
 
@@ -46,8 +47,9 @@ namespace WebServer
             services.AddSingleton<IActorRepository, ActorSyncRepository>();
             services.AddSingleton<IMovieRepository, MovieSyncRepository>();
 
+            services.AddSingleton<IMessageBrokerServiceClient, MessageBrokerServiceClient>();
             services.AddSingleton(new ServerDescriptor());
-            services.AddSingleton(new MessageBus(Configuration.GetConnectionString("MessageBroker")));
+            services.AddSingleton(new MessageBrokerReceiver(Configuration.GetConnectionString("MessageBroker")));
 
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen();
@@ -98,34 +100,22 @@ namespace WebServer
 
         private void StartSync(IApplicationBuilder app)
         {
-            var messageBus = app.ApplicationServices.GetService<MessageBus>();
+            var messageBrokerReceiver = app.ApplicationServices.GetService<MessageBrokerReceiver>();
+            var serverDescriptor = app.ApplicationServices.GetService<ServerDescriptor>();
             var actorRepository = app.ApplicationServices.GetService<IActorRepository>();
             var movieRepository = app.ApplicationServices.GetService<IMovieRepository>();
 
-            Console.WriteLine("> Registering actor synchronizer");
-            RegisterSync(actorRepository, messageBus);
-            Console.WriteLine("> Registering movie synchronizer");
-            RegisterSync(movieRepository, messageBus);
+            Console.WriteLine("> Registering synchronizer");
+            messageBrokerReceiver.Subscribe(serverDescriptor.Id.ToString(), actorRepository, movieRepository);
         }
 
-        private void RegisterSync<T, TEvent>(IEventSynchronizer<T, TEvent> eventSynchronizer, MessageBus messageBus)
-            where T : IEntity where TEvent : IEventEntity
+        private async void EnqueueServer(IApplicationBuilder app)
         {
-            messageBus.Subscribe<EntityInsertEvent<TEvent>>(eventSynchronizer.InsertQueue, eventSynchronizer.OnInsertEvent);
-            messageBus.Subscribe<EntityUpdateEvent<TEvent>>(eventSynchronizer.UpdateQueue, eventSynchronizer.OnUpdateEvent);
-            messageBus.Subscribe<EntityDeleteEvent>(eventSynchronizer.DeleteQueue, eventSynchronizer.OnDeleteEvent);
-        }
-
-        private void EnqueueServer(IApplicationBuilder app)
-        {
-            var messageBus = app.ApplicationServices.GetService<MessageBus>();
+            var messageBroker = app.ApplicationServices.GetService<IMessageBrokerServiceClient>();
             var serviceDescriptor = app.ApplicationServices.GetService<ServerDescriptor>();
-
             serviceDescriptor.Url = GetServerAddress(app);
-            messageBus.Publish("Server", new ServerEvent
-            {
-                Url = serviceDescriptor.Url
-            });
+
+            await messageBroker.Subscribe(serviceDescriptor.Id.ToString(), serviceDescriptor.Url);
         }
 
         private string GetServerAddress(IApplicationBuilder app)

@@ -2,7 +2,7 @@
 using System.Net.Sockets;
 using System.Threading;
 
-namespace MessageBroker.Helpers
+namespace Common.Helpers
 {
     public class HttpHelper
     {
@@ -43,8 +43,7 @@ namespace MessageBroker.Helpers
                         }
                     }
                     catch
-                    {
-                    }
+                    { }
                 }
             }
             Console.WriteLine("Port open");

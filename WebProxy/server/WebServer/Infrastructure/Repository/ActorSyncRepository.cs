@@ -5,6 +5,7 @@ using WebServer.Application;
 using WebServer.Application.Abstractions;
 using WebServer.Domain.Entities;
 using WebServer.Domain.Events;
+using WebServer.Infrastructure.gRPC;
 
 namespace WebServer.Infrastructure.Repository
 {
@@ -14,9 +15,9 @@ namespace WebServer.Infrastructure.Repository
 
         public ActorSyncRepository(
             IApplicationDbContext dbContext,
-            MessageBus messageBus,
-            ServerDescriptor serverDescriptor) : base(
-                messageBus, serverDescriptor)
+            ServerDescriptor serverDescriptor,
+            IMessageBrokerServiceClient messageBrokerServiceClient) : base(
+                serverDescriptor, messageBrokerServiceClient)
         {
             this.dbContext = dbContext;
         }
