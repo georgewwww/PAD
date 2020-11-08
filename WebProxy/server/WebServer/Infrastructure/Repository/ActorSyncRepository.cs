@@ -1,15 +1,13 @@
-﻿using MessageBroker;
-using MongoDB.Driver;
+﻿using MongoDB.Driver;
 using System;
 using WebServer.Application;
 using WebServer.Application.Abstractions;
 using WebServer.Domain.Entities;
-using WebServer.Domain.Events;
 using WebServer.Infrastructure.gRPC;
 
 namespace WebServer.Infrastructure.Repository
 {
-    public class ActorSyncRepository : SyncRepository<Actor, ActorEventEntity>, IActorRepository
+    public class ActorSyncRepository : SyncRepository<Actor>, IActorRepository
     {
         private readonly IApplicationDbContext dbContext;
 
@@ -36,44 +34,12 @@ namespace WebServer.Infrastructure.Repository
                    .Set(a => a.Description, entity.Description);
         }
 
-        public override Actor CreateModel(ActorEventEntity entityEvent)
+        public override Actor CreateModelFromId(Guid id)
         {
             return new Actor
             {
-                Id = entityEvent.Id,
-                FullName = entityEvent.FullName,
-                ImageLink = entityEvent.ImageLink,
-                BirthDate = entityEvent.BirthDate,
-                BirthYear = entityEvent.BirthYear,
-                Description = entityEvent.Description
+                Id = id
             };
-        }
-
-        public override ActorEventEntity CreateEventModel(Actor entity)
-        {
-            return new ActorEventEntity
-            {
-                Id = entity.Id,
-                FullName = entity.FullName,
-                ImageLink = entity.ImageLink,
-                BirthDate = entity.BirthDate,
-                BirthYear = entity.BirthYear,
-                Description = entity.Description
-            };
-        }
-
-        public override void UpdateEntity(ActorEventEntity @event, Actor entity, bool copyId)
-        {
-            if (copyId)
-            {
-                entity.Id = @event.Id;
-            }
-
-            entity.FullName = @event.FullName;
-            entity.BirthDate = @event.BirthDate;
-            entity.BirthYear = @event.BirthYear;
-            entity.Description = @event.Description;
-            entity.ImageLink = @event.ImageLink;
         }
 
         protected static FilterDefinitionBuilder<Actor> FilterDef => Builders<Actor>.Filter;

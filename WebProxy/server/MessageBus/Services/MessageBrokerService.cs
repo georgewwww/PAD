@@ -1,8 +1,10 @@
 ﻿using Common;
+using Common.Models;
 using Grpc.Core;
 using MessageBus.Abstractions;
 using MessageBus.Models;
 using MessageBus.Services;
+using Newtonsoft.Json;
 using System;
 using System.Threading.Tasks;
 
@@ -11,11 +13,11 @@ namespace MessageBroker.Services
     public class MessageBrokerService : Common.MessageBroker.MessageBrokerBase
     {
         private readonly IMessageBrokerPersistance messageBrokerPersistance;
-        private readonly QueueService queueService;
+        private readonly IQueueService queueService;
 
         public MessageBrokerService(
             IMessageBrokerPersistance messageBrokerPersistance,
-            QueueService queueService)
+            IQueueService queueService)
         {
             this.messageBrokerPersistance = messageBrokerPersistance;
             this.queueService = queueService;
@@ -46,19 +48,30 @@ namespace MessageBroker.Services
             });
         }
 
-        public async override Task<ResponseMessage> PublishInsert(RequestMessage request, ServerCallContext context)
+        public async override Task<ResponseMessage> PublishEntity(RequestMessage request, ServerCallContext context)
         {
             bool response;
+            string currentServerId = string.Empty;
             try
             {
-                foreach (var server in messageBrokerPersistance.Get()) {
-                    queueService.Publish(server.Id, request.Payload);
+                foreach (var server in messageBrokerPersistance.GetExcept(request.EmittedServerId)) {
+                    currentServerId = server.Id;
+
+                    var model = new Request
+                    {
+                        EmittedServerId = request.EmittedServerId,
+                        Descriptive = request.Descriptive,
+                        Payload = request.Payload
+                    };
+
+                    queueService.Publish(server.Id, model);
                 }
 
                 response = true;
             }
-            catch(Exception e)
+            catch(Exception)
             {
+                messageBrokerPersistance.Remove(currentServerId);
                 response = false;
             }
 

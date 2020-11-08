@@ -1,5 +1,5 @@
-using MessageBroker;
-using MessageBroker.Models;
+using GreenPipes;
+using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -13,9 +13,7 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using WebServer.Application;
 using WebServer.Application.Abstractions;
-using WebServer.Application.Abstractions.Domain;
 using WebServer.Application.Services;
-using WebServer.Domain.Events;
 using WebServer.Infrastructure.gRPC;
 using WebServer.Infrastructure.Persistence;
 using WebServer.Infrastructure.Repository;
@@ -34,6 +32,29 @@ namespace WebServer
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var appId = Guid.NewGuid();
+
+            services.AddMassTransit(x =>
+            {
+                x.AddConsumer<MessageBusConsumer>();
+                x.AddBus(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
+                {
+                    cfg.UseHealthCheck(provider);
+                    cfg.Host(new Uri($"rabbitmq://{Configuration.GetConnectionString("MessageBrokerHost")}"), h =>
+                    {
+                        h.Username(Configuration.GetConnectionString("MessageBrokerUsername"));
+                        h.Password(Configuration.GetConnectionString("MessageBrokerPassword"));
+                    });
+                    cfg.ReceiveEndpoint(appId.ToString(), ep =>
+                    {
+                        ep.PrefetchCount = 16;
+                        ep.UseMessageRetry(r => r.Interval(2, 100));
+                        ep.ConfigureConsumer<MessageBusConsumer>(provider);
+                    });
+                }));
+            });
+            services.AddMassTransitHostedService();
+
             services.AddControllers();
 
             services.Configure<ConnectionDatabaseSettings>(Configuration.GetSection("ConnectionDatabaseSettings"));
@@ -48,8 +69,7 @@ namespace WebServer
             services.AddSingleton<IMovieRepository, MovieSyncRepository>();
 
             services.AddSingleton<IMessageBrokerServiceClient, MessageBrokerServiceClient>();
-            services.AddSingleton(new ServerDescriptor());
-            services.AddSingleton(new MessageBrokerReceiver(Configuration.GetConnectionString("MessageBroker")));
+            services.AddSingleton(new ServerDescriptor(appId));
 
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen();
@@ -61,7 +81,6 @@ namespace WebServer
             try
             {
                 Task.Factory.StartNew(() => EnqueueServer(app));
-                StartSync(app);
             }
             catch (Exception e)
             {
@@ -98,24 +117,13 @@ namespace WebServer
             });
         }
 
-        private void StartSync(IApplicationBuilder app)
-        {
-            var messageBrokerReceiver = app.ApplicationServices.GetService<MessageBrokerReceiver>();
-            var serverDescriptor = app.ApplicationServices.GetService<ServerDescriptor>();
-            var actorRepository = app.ApplicationServices.GetService<IActorRepository>();
-            var movieRepository = app.ApplicationServices.GetService<IMovieRepository>();
-
-            Console.WriteLine("> Registering synchronizer");
-            messageBrokerReceiver.Subscribe(serverDescriptor.Id.ToString(), actorRepository, movieRepository);
-        }
-
         private async void EnqueueServer(IApplicationBuilder app)
         {
-            var messageBroker = app.ApplicationServices.GetService<IMessageBrokerServiceClient>();
+            var messageBrokerClient = app.ApplicationServices.GetService<IMessageBrokerServiceClient>();
             var serviceDescriptor = app.ApplicationServices.GetService<ServerDescriptor>();
             serviceDescriptor.Url = GetServerAddress(app);
 
-            await messageBroker.Subscribe(serviceDescriptor.Id.ToString(), serviceDescriptor.Url);
+            await messageBrokerClient.Subscribe(serviceDescriptor.Id.ToString(), serviceDescriptor.Url);
         }
 
         private string GetServerAddress(IApplicationBuilder app)

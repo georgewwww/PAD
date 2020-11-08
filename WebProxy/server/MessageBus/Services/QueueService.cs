@@ -1,53 +1,30 @@
-﻿using Common.Helpers;
-using Newtonsoft.Json;
-using RabbitMQ.Client;
-using System.Data.Common;
-using System.Text;
+﻿using MassTransit;
+using Microsoft.Extensions.Configuration;
+using System;
 
 namespace MessageBus.Services
 {
-    public class QueueService
+    public class QueueService : IQueueService
     {
-        private readonly ConnectionFactory connectionFactory;
-        private readonly IConnection connection;
-        private readonly IModel channel;
+        private readonly IBus bus;
+        private readonly IConfiguration configuration;
 
-        public QueueService(string connectionString)
+        public QueueService(IBus bus, IConfiguration configuration)
         {
-            var dbConnectionStringBuilder = new DbConnectionStringBuilder
-            {
-                ConnectionString = connectionString
-            };
-
-            var host = dbConnectionStringBuilder["Host"].ToString();
-            HttpHelper.WaitForPortOpen(1000, host, int.Parse(dbConnectionStringBuilder["Port"].ToString()));
-
-            connectionFactory = new ConnectionFactory
-            {
-                HostName = host,
-                UserName = dbConnectionStringBuilder["Username"].ToString(),
-                Password = dbConnectionStringBuilder["Password"].ToString()
-            };
-            connection = connectionFactory.CreateConnection();
-            channel = connection.CreateModel();
+            this.bus = bus;
+            this.configuration = configuration;
         }
 
-        public void Publish(string queue, object message)
+        public async void Publish<T>(string queue, T message)
         {
-            //QueueDeclare(queue);
-            
-            var serializedObject = JsonConvert.SerializeObject(message);
-
-            channel.BasicPublish(
-                exchange: string.Empty,
-                routingKey: queue,
-                basicProperties: null,
-                body: Encoding.UTF8.GetBytes(serializedObject));
+            var uri = new Uri(string.Concat($"rabbitmq://{configuration.GetConnectionString("MessageBrokerHost")}/", queue));
+            var endPoint = await bus.GetSendEndpoint(uri);
+            await endPoint.Send(message);
         }
+    }
 
-        private void QueueDeclare(string queue)
-        {
-            channel.QueueDeclare(queue: queue);
-        }
+    public interface IQueueService
+    {
+        void Publish<T>(string queue, T message);
     }
 }

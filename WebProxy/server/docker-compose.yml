@@ -1,6 +1,18 @@
 version: '3.8'
 
 services:
+  message_broker:
+    build:
+      context: ./
+      dockerfile: MessageBus.Dockerfile
+    environment:
+      ConnectionStrings:MessageBrokerHost: rabbitmq
+    ports:
+      - 5000:80
+      - 5001:443
+    depends_on:
+      - rabbitmq
+
   web_md:
     build:
       context: ./
@@ -8,13 +20,15 @@ services:
     environment:
       ConnectionDatabaseSettings:ConnectionString: mongodb://mongo:27017/db_md
       ConnectionDatabaseSettings:DatabaseName: db_md
-      ConnectionStrings:MessageBroker: Host=rabbitmq;Port=5672;Username=root;Password=root
+      ConnectionStrings:MessageBrokerHost: rabbitmq
+      ConnectionStrings:MessageBrokerGrpc: message_broker
     ports:
       - 8000:80
       - 8001:443
     depends_on:
       - rabbitmq
       - mongo
+      - message_broker
 
   web_us:
     build:
@@ -23,13 +37,14 @@ services:
     environment:
       ConnectionDatabaseSettings:ConnectionString: mongodb://mongo:27017/db_us
       ConnectionDatabaseSettings:DatabaseName: db_us
-      ConnectionStrings:MessageBroker: Host=rabbitmq;Port=5672;Username=root;Password=root
+      ConnectionStrings:MessageBrokerHost: rabbitmq
     ports:
       - 9000:80
       - 9001:443
     depends_on:
       - rabbitmq
       - mongo
+      - message_broker
 
   mongo:
     image: mongo

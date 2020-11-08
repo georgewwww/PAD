@@ -1,8 +1,7 @@
 ﻿using Common;
 using Grpc.Net.Client;
+using Microsoft.Extensions.Configuration;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using WebServer.Application;
 
@@ -10,14 +9,18 @@ namespace WebServer.Infrastructure.gRPC
 {
     public class MessageBrokerServiceClient : IMessageBrokerServiceClient
     {
-        private readonly Common.MessageBroker.MessageBrokerClient client;
+        private readonly MessageBroker.MessageBrokerClient client;
         private readonly ServerDescriptor serverDescriptor;
 
-        public MessageBrokerServiceClient(ServerDescriptor serverDescriptor)
+        public MessageBrokerServiceClient(
+            ServerDescriptor serverDescriptor,
+            IConfiguration configuration)
         {
-            var channel = GrpcChannel.ForAddress("https://localhost:5000");
-            client = new Common.MessageBroker.MessageBrokerClient(channel);
             this.serverDescriptor = serverDescriptor;
+
+            AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+            var channel = GrpcChannel.ForAddress($"http://{configuration.GetConnectionString("MessageBrokerGrpc")}:5000");
+            client = new MessageBroker.MessageBrokerClient(channel);
         }
 
         public async Task Subscribe(string id, string hostName)
@@ -40,7 +43,7 @@ namespace WebServer.Infrastructure.gRPC
                 Payload = payload
             };
 
-            await client.PublishInsertAsync(request);
+            await client.PublishEntityAsync(request);
         }
     }
 }

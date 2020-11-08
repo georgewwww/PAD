@@ -20,6 +20,18 @@ namespace MessageBus.Services
             ServicesIdentifiers.Enqueue(serverInfo);
         }
 
+        public void Remove(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id)) return;
+
+            ServicesIdentifiers.TryDequeue(out var serverInfo);
+            if (serverInfo.Id != id)
+            {
+                Remove(id);
+                Add(serverInfo);
+            }
+        }
+
         public IList<ServerInfo> Get()
         {
             return ServicesIdentifiers.ToList();

@@ -1,15 +1,13 @@
-﻿using MessageBroker;
-using MongoDB.Driver;
+﻿using MongoDB.Driver;
 using System;
 using WebServer.Application;
 using WebServer.Application.Abstractions;
 using WebServer.Domain.Entities;
-using WebServer.Domain.Events;
 using WebServer.Infrastructure.gRPC;
 
 namespace WebServer.Infrastructure.Repository
 {
-    public class MovieSyncRepository : SyncRepository<Movie, MovieEventEntity>, IMovieRepository
+    public class MovieSyncRepository : SyncRepository<Movie>, IMovieRepository
     {
         private readonly IApplicationDbContext dbContext;
 
@@ -38,50 +36,12 @@ namespace WebServer.Infrastructure.Repository
                 .Set(a => a.Description, entity.Description);
         }
 
-        public override Movie CreateModel(MovieEventEntity entityEvent)
+        public override Movie CreateModelFromId(Guid id)
         {
             return new Movie
             {
-                Id = entityEvent.Id,
-                Name = entityEvent.Name,
-                PosterLink = entityEvent.PosterLink,
-                Genre = entityEvent.Genre,
-                PremYear = entityEvent.PremYear,
-                Time = entityEvent.Time,
-                Score = entityEvent.Score,
-                Description = entityEvent.Description
+                Id = id
             };
-        }
-
-        public override MovieEventEntity CreateEventModel(Movie entity)
-        {
-            return new MovieEventEntity
-            {
-                Id = entity.Id,
-                Name = entity.Name,
-                PosterLink = entity.PosterLink,
-                Genre = entity.Genre,
-                PremYear = entity.PremYear,
-                Time = entity.Time,
-                Score = entity.Score,
-                Description = entity.Description
-            };
-        }
-
-        public override void UpdateEntity(MovieEventEntity @event, Movie entity, bool copyId)
-        {
-            if (copyId)
-            {
-                entity.Id = @event.Id;
-            }
-
-            entity.Name = @event.Name;
-            entity.PosterLink = @event.PosterLink;
-            entity.PremYear = @event.PremYear;
-            entity.Score = @event.Score;
-            entity.Time = @event.Time;
-            entity.Genre = @event.Genre;
-            entity.Description = @event.Description;
         }
 
         protected static FilterDefinitionBuilder<Movie> FilterDef => Builders<Movie>.Filter;

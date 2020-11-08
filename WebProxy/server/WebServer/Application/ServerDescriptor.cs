@@ -11,5 +11,10 @@ namespace WebServer.Application
         {
             Id = Guid.NewGuid();
         }
+
+        public ServerDescriptor(Guid id)
+        {
+            Id = id;
+        }
     }
 }

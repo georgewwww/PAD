@@ -18,5 +18,15 @@ namespace WebServer.Domain.Entities
         public string BirthDate { get; set; }
         [BsonElement]
         public string Description { get; set; }
+
+        public Actor()
+        {
+            Id = Guid.Empty;
+            FullName = string.Empty;
+            ImageLink = string.Empty;
+            BirthYear = 0;
+            BirthDate = string.Empty;
+            Description = string.Empty;
+        }
     }
 }
