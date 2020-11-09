@@ -32,14 +32,14 @@ namespace WebServer.Controllers
         }
 
         [HttpPost]
-        public async Task<Actor> Post([FromBody] Actor actor,
+        public async Task<IActionResponse> Post([FromBody] Actor actor,
             CancellationToken cancellationToken)
         {
             return await service.Insert(actor, cancellationToken);
         }
 
         [HttpPut("{id}")]
-        public async Task<Actor> Put(Guid id, [FromBody] Actor actor,
+        public async Task<IActionResponse> Put(Guid id, [FromBody] Actor actor,
             CancellationToken cancellationToken)
         {
             actor.Id = id;
@@ -48,9 +48,9 @@ namespace WebServer.Controllers
         }
 
         [HttpDelete]
-        public async Task Delete(Guid id, CancellationToken cancellationToken)
+        public async Task<IActionResponse> Delete(Guid id, CancellationToken cancellationToken)
         {
-            await service.Delete(id, cancellationToken);
+            return await service.Delete(id, cancellationToken);
         }
     }
 }

@@ -9,7 +9,7 @@
         var self = this;
         $http({
             method: 'get',
-            url: 'https://localhost:44353/api/actor'
+            url: 'http://localhost:8080/api/actor'
         }).then(function(response) {
             console.log(response, 'res');
             self.actors = response.data;

@@ -15,6 +15,13 @@ namespace SmartProxy.Helpers
             {
                 webHeaderCollection.Add(requestHeader, nameValueCollection[requestHeader]);
             }
+            AddCors(webHeaderCollection);
+        }
+
+        private static void AddCors(NameValueCollection webHeaderCollection)
+        {
+            webHeaderCollection.Add("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Z-Key");
+            webHeaderCollection.Add("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
         }
 
         public static void InputStream(WebRequest webRequest, HttpListenerRequest request)
@@ -41,6 +48,8 @@ namespace SmartProxy.Helpers
         public static void Response(HttpListenerResponse httpListenerResponse, byte[] buffer, int size)
         {
             httpListenerResponse.OutputStream.Write(buffer, 0, size);
+            httpListenerResponse.OutputStream.Close();
+            httpListenerResponse.Close();
         }
 
         public static void RequestDetails(WebRequest webRequest, HttpListenerRequest request)

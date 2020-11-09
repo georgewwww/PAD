@@ -1,7 +1,11 @@
-﻿using SmartProxy.LoadDistribution;
+﻿using Common.Models;
+using GreenPipes;
+using MassTransit;
+using SmartProxy.LoadDistribution;
 using StackExchange.Redis;
 using System;
 using System.Net;
+using System.Threading.Tasks;
 
 namespace SmartProxy
 {
@@ -11,16 +15,47 @@ namespace SmartProxy
         private static LoadBalancer loadBalancer;
         private static ConnectionMultiplexer connectionMultiplexer;
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            // todo MessageBroker
-
-            httpListener = new HttpListener();
             loadBalancer = new LoadBalancer();
-            connectionMultiplexer = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable("RedisHost"));
+            httpListener = new HttpListener();
+            connectionMultiplexer = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable("RedisHost") + ",allowAdmin=true");
+
+            var busControl = Bus.Factory.CreateUsingRabbitMq(cfg =>
+            {
+                cfg.Host(new Uri($"rabbitmq://{Environment.GetEnvironmentVariable("MessageBrokerHost")}"), h =>
+                {
+                    h.Username(Environment.GetEnvironmentVariable("MessageBrokerUsername"));
+                    h.Password(Environment.GetEnvironmentVariable("MessageBrokerPassword"));
+                });
+                cfg.ReceiveEndpoint("server-listener", e =>
+                {
+                    e.PrefetchCount = 16;
+                    e.UseMessageRetry(r => r.Interval(2, 100));
+                    e.Handler<ServerEvent>(context =>
+                    {
+                        loadBalancer.Add(new Uri(context.Message.Url));
+                        return Console.Out.WriteLineAsync($"Server up: {context.Message.Url}");
+                    });
+                });
+            });
+
+            await busControl.StartAsync();
+
+            Console.WriteLine("Press enter to exit");
 
             var loadBalancerListener = new LoadBalancerListener(httpListener, loadBalancer, connectionMultiplexer);
             loadBalancerListener.Listen();
+
+            try
+            {
+                await Task.Run(() => Console.ReadLine());
+            }
+            finally
+            {
+                await busControl.StopAsync();
+                loadBalancerListener.Stop();
+            }
         }
     }
 }

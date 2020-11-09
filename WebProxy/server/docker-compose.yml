@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  # smart_proxy:
+  #   build:
+  #     context: ./
+  #     dockerfile: SmartProxy.Dockerfile
+  #   environment:
+  #     LoadBalancerListenUrl: http://*:80/
+  #     MessageBrokerHost: rabbitmq
+  #     RedisHost: redis:6379
+  #   ports: 
+  #     - 8080:80
+  #   depends_on: 
+  #     - rabbitmq
+  #     - redis
+
   message_broker:
     build:
       context: ./
@@ -18,6 +32,7 @@ services:
       context: ./
       dockerfile: WebServer.Dockerfile
     environment:
+      AppHost: http://localhost:8000
       ConnectionDatabaseSettings:ConnectionString: mongodb://mongo:27017/db_md
       ConnectionDatabaseSettings:DatabaseName: db_md
       ConnectionStrings:MessageBrokerHost: rabbitmq
@@ -35,9 +50,11 @@ services:
       context: ./
       dockerfile: WebServer.Dockerfile
     environment:
+      AppHost: http://localhost:9000
       ConnectionDatabaseSettings:ConnectionString: mongodb://mongo:27017/db_us
       ConnectionDatabaseSettings:DatabaseName: db_us
       ConnectionStrings:MessageBrokerHost: rabbitmq
+      ConnectionStrings:MessageBrokerGrpc: message_broker
     ports:
       - 9000:80
       - 9001:443
@@ -61,3 +78,8 @@ services:
     ports:
       - 5672:5672
       - 15672:15672
+
+  redis:
+    image: redis
+    ports:
+      - 6379:6379

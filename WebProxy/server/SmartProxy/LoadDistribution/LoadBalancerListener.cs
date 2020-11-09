@@ -24,6 +24,7 @@ namespace SmartProxy.LoadDistribution
 
         public void Listen()
         {
+            RemoveAllCache();
             httpListener.Prefixes.Add(Environment.GetEnvironmentVariable("LoadBalancerListenUrl"));
 
             Console.WriteLine("Listening to following profiles:");
@@ -34,9 +35,6 @@ namespace SmartProxy.LoadDistribution
 
             httpListener.Start();
             httpListener.BeginGetContext(ProcessRequestCallback, null);
-
-            Thread.Sleep(TimeSpan.FromDays(7));
-            Stop();
         }
 
         public void Stop()
@@ -57,6 +55,15 @@ namespace SmartProxy.LoadDistribution
             // Check for double request
             if (requestUrl.AbsoluteUri.Contains("favicon")) return;
 
+            if (request.HttpMethod == "OPTIONS")
+            {
+                context.Response.AddHeader("Access-Control-Allow-Origin", "*");
+                context.Response.AddHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Z-Key");
+                context.Response.AddHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+                context.Response.Close();
+                return;
+            }
+
             var readingResource = request.HttpMethod == "GET";
             var pathList = requestUrl.LocalPath.Split("/").Where(s => !string.IsNullOrEmpty(s)).Take(2).ToList();
 
@@ -66,7 +73,7 @@ namespace SmartProxy.LoadDistribution
                 {
                     var resource = pathList[0] + "/" + pathList[1];
                     RemoveCacheByPattern("*" + resource + "*");
-                    Console.WriteLine($"[Thread {Thread.CurrentThread.ManagedThreadId}] Removing cache for " + resource + " because of method : " + request.HttpMethod);
+                    Console.Out.WriteLineAsync($"[Thread {Thread.CurrentThread.ManagedThreadId}] Removing cache for " + resource + " because of method : " + request.HttpMethod);
                 }
             }
             var redisKey = requestUrl.PathAndQuery;
@@ -74,7 +81,7 @@ namespace SmartProxy.LoadDistribution
             if (readingResource &&
                 connectionMultiplexer.GetDatabase(0).KeyExists(redisKey))
             {
-                Console.WriteLine($"[Thread {Thread.CurrentThread.ManagedThreadId}] Returning cached request.");
+                Console.Out.WriteLineAsync($"[Thread {Thread.CurrentThread.ManagedThreadId}] Returning cached request.");
                 var content = connectionMultiplexer.GetDatabase(0).StringGet(redisKey);
                 var cachedResponse = JsonConvert.DeserializeObject<CachedResponse>(content);
 
@@ -85,7 +92,7 @@ namespace SmartProxy.LoadDistribution
             {
                 var uri = GetRedirectUri(request);
 
-                Console.WriteLine($"[Thread {Thread.CurrentThread.ManagedThreadId}] Incoming {request.HttpMethod} request for: {uri}");
+                Console.Out.WriteLineAsync($"[Thread {Thread.CurrentThread.ManagedThreadId}] Incoming {request.HttpMethod} request for: {uri}");
 
                 var webRequest = WebRequest.Create(uri);
                 CopyHelper.RequestDetails(webRequest, request);
@@ -109,9 +116,6 @@ namespace SmartProxy.LoadDistribution
                     connectionMultiplexer.GetDatabase(0).StringSet(redisKey, serializeObject);
                 }
             }
-
-            context.Response.OutputStream.Close();
-            context.Response.Close();
         }
 
         private Uri GetRedirectUri(HttpListenerRequest request)
@@ -137,6 +141,15 @@ namespace SmartProxy.LoadDistribution
                 {
                     connectionMultiplexer.GetDatabase(0).KeyDelete(key);
                 }
+            }
+        }
+
+        private void RemoveAllCache()
+        {
+            foreach (var ep in connectionMultiplexer.GetEndPoints(true))
+            {
+                var server = connectionMultiplexer.GetServer(ep);
+                server.FlushAllDatabases();
             }
         }
     }

@@ -13,7 +13,7 @@
 
         $http({
             method: 'get',
-            url: 'https://localhost:44353/api/Actor/' + self.actorId
+            url: 'http://localhost:8080/api/Actor/' + self.actorId
         }).then(function(response) {
             console.log(response, 'res');
             self.actor = response.data;
@@ -33,7 +33,7 @@
             console.log(self.updatedActor)
             $http({
                     method: 'PUT',
-                    url: 'https://localhost:44353/api/Actor/' + self.actorId,
+                    url: 'http://localhost:8080/api/Actor/' + self.actorId,
                     data: self.updatedActor,
                     headers: {
                         'Content-Type': 'application/json'

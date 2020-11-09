@@ -9,6 +9,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using WebServer.Application;
@@ -132,9 +133,7 @@ namespace WebServer
 
             try
             {
-                var serverAddressesFeature = app.ServerFeatures.Get<IServerAddressesFeature>();
-                var address = serverAddressesFeature.Addresses.First();
-                return address;
+                return (string)Configuration.GetValue(typeof(string), "AppHost");
             }
             catch (SocketException e)
             {

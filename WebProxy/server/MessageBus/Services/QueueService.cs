@@ -1,6 +1,8 @@
-﻿using MassTransit;
+﻿using Common.Models;
+using MassTransit;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Threading.Tasks;
 
 namespace MessageBus.Services
 {
@@ -15,7 +17,12 @@ namespace MessageBus.Services
             this.configuration = configuration;
         }
 
-        public async void Publish<T>(string queue, T message)
+        public async Task Enqueue(ServerEvent serverEvent)
+        {
+            await Publish("server-listener", serverEvent);
+        }
+
+        public async Task Publish<T>(string queue, T message)
         {
             var uri = new Uri(string.Concat($"rabbitmq://{configuration.GetConnectionString("MessageBrokerHost")}/", queue));
             var endPoint = await bus.GetSendEndpoint(uri);
@@ -25,6 +32,7 @@ namespace MessageBus.Services
 
     public interface IQueueService
     {
-        void Publish<T>(string queue, T message);
+        Task Enqueue(ServerEvent serverEvent);
+        Task Publish<T>(string queue, T message);
     }
 }

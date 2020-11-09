@@ -13,7 +13,7 @@
 
         $http({
             method: 'get',
-            url: 'https://localhost:44353/api/Movie/' + self.movieId
+            url: 'http://localhost:8080/api/Movie/' + self.movieId
         }).then(function(response) {
             console.log(response, 'res');
             self.movie = response.data;
@@ -35,7 +35,7 @@
             console.log(self.updatedMovie)
             $http({
                     method: 'PUT',
-                    url: 'https://localhost:44353/api/Movie/' + self.movieId,
+                    url: 'http://localhost:8080/api/Movie/' + self.movieId,
                     data: self.updatedMovie,
                     headers: {
                         'Content-Type': 'application/json'

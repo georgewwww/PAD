@@ -5,6 +5,8 @@
         .module('hr')
         .controller('ActorAddCtrl', ['$http', '$state', ActorAddCtrl]);
 
+    let sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
     function ActorAddCtrl($http, $state, ) {
         var self = this;
 
@@ -22,7 +24,7 @@
 
             $http({
                 method: 'POST',
-                url: 'https://localhost:44353/api/actor',
+                url: 'http://localhost:8080/api/actor',
                 data: self.updatedActor,
                 headers: {
                     'Content-Type': 'application/json'
@@ -30,6 +32,7 @@
             })
             .then(function(response) {
                 console.log('succes');
+                sleep(1000);
                 $state.go('actors');
             }, function(error) {
                 console.log('can not put data.');

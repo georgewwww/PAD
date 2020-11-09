@@ -34,6 +34,13 @@ namespace MessageBroker.Services
                     Host = request.ServerHost
                 };
                 messageBrokerPersistance.Add(serverInfo);
+
+                var serverEvent = new ServerEvent
+                {
+                    Url = request.ServerHost
+                };
+                await queueService.Enqueue(serverEvent);
+
                 Console.WriteLine($">> New server added: {serverInfo.Id} and host {serverInfo.Host} <<");
                 response = true;
             }
@@ -64,7 +71,7 @@ namespace MessageBroker.Services
                         Payload = request.Payload
                     };
 
-                    queueService.Publish(server.Id, model);
+                    await queueService.Publish(server.Id, model);
                 }
 
                 response = true;
