@@ -4,10 +4,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using WebServer.Application.Abstractions;
 using WebServer.Application.Abstractions.Domain;
+using WebServer.Domain;
 
 namespace WebServer.Application.Services
 {
-    public class AbstractService<T> : IService<T> where T : class, IEntity
+    public class AbstractService<T> : IService<T>
+        where T : class, IEntity
     {
         private readonly IRepository<T> repository;
 
@@ -16,16 +18,33 @@ namespace WebServer.Application.Services
             this.repository = repository;
         }
 
-        public async Task Delete(Guid id, CancellationToken cancellationToken)
+        public async Task<IActionResponse> Delete(Guid id, CancellationToken cancellationToken)
         {
-            var entity = await repository.Get(id, cancellationToken);
-
-            if (entity == null)
+            try
             {
-                throw new Exception("Entity not found");
-            }
+                var entity = await repository.Get(id, cancellationToken);
 
-            await repository.Delete(id, cancellationToken);
+                if (entity == null)
+                {
+                    throw new Exception("Entity not found");
+                }
+
+                await repository.Delete(id, cancellationToken);
+
+                return await Task.FromResult(new ActionResponse
+                {
+                    StatusCode = 200,
+                    Message = string.Empty
+                });
+            }
+            catch (Exception e)
+            {
+                return await Task.FromResult(new ActionResponse
+                {
+                    StatusCode = 500,
+                    Message = e.Message
+                });
+            }
         }
 
         public async Task<T> Get(Guid id, CancellationToken cancellationToken)
@@ -38,14 +57,48 @@ namespace WebServer.Application.Services
             return await repository.Get(cancellationToken);
         }
 
-        public async Task<T> Insert(T entity, CancellationToken cancellationToken)
+        public async Task<IActionResponse> Insert(T entity, CancellationToken cancellationToken)
         {
-            return await repository.Insert(entity, cancellationToken);
+            try
+            {
+                await repository.Insert(entity, cancellationToken);
+
+                return await Task.FromResult(new ActionResponse
+                {
+                    StatusCode = 200,
+                    Message = string.Empty
+                });
+            }
+            catch(Exception e)
+            {
+                return await Task.FromResult(new ActionResponse
+                {
+                    StatusCode = 500,
+                    Message = e.Message
+                });
+            }
         }
 
-        public async Task<T> Update(T entity, CancellationToken cancellationToken)
+        public async Task<IActionResponse> Update(T entity, CancellationToken cancellationToken)
         {
-            return await repository.Update(entity, cancellationToken);
+            try
+            {
+                await repository.Update(entity, cancellationToken);
+
+                return await Task.FromResult(new ActionResponse
+                {
+                    StatusCode = 200,
+                    Message = string.Empty
+                });
+            }
+            catch (Exception e)
+            {
+                return await Task.FromResult(new ActionResponse
+                {
+                    StatusCode = 500,
+                    Message = e.Message
+                });
+            }
         }
     }
 }

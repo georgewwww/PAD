@@ -1,5 +1,5 @@
-﻿using MessageBroker;
-using MongoDB.Driver;
+﻿using MongoDB.Driver;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -7,28 +7,23 @@ using System.Threading.Tasks;
 using WebServer.Application;
 using WebServer.Application.Abstractions;
 using WebServer.Application.Abstractions.Domain;
-using WebServer.Domain.Events;
+using WebServer.Infrastructure.gRPC;
 
 namespace WebServer.Infrastructure.Repository
 {
-    public abstract class SyncRepository<T, TEvent> : IRepository<T>, IEventSynchronizer<T, TEvent>
+    public abstract class SyncRepository<T> : IRepository<T>
         where T : class, IEntity
-        where TEvent : IEventEntity
     {
-        private readonly MessageBus messageBroker;
         private readonly ServerDescriptor serverDescriptor;
+        private readonly IMessageBrokerServiceClient messageBrokerServiceClient;
 
         public SyncRepository(
-            MessageBus messageBroker,
-            ServerDescriptor serverDescriptor)
+            ServerDescriptor serverDescriptor,
+            IMessageBrokerServiceClient messageBrokerServiceClient)
         {
-            this.messageBroker = messageBroker;
             this.serverDescriptor = serverDescriptor;
+            this.messageBrokerServiceClient = messageBrokerServiceClient;
         }
-
-        public string InsertQueue => typeof(T).Name + "-insert";
-        public string UpdateQueue => typeof(T).Name + "-update";
-        public string DeleteQueue => typeof(T).Name + "-delete";
 
         public async Task<T> Get(Guid id, CancellationToken cancellationToken)
         {
@@ -46,13 +41,16 @@ namespace WebServer.Infrastructure.Repository
         public async Task<T> Insert(T entity, CancellationToken cancellationToken, bool createEvent = true)
         {
             await Collection.InsertOneAsync(entity, cancellationToken: cancellationToken);
+
+            Console.WriteLine("Inserting entity to database: " + entity.Id);
             if (createEvent)
             {
-                messageBroker.Publish(InsertQueue, new EntityInsertEvent<TEvent>
-                {
-                    EmittedServerId = serverDescriptor.Id,
-                    Entity = CreateEventModel(entity)
-                });
+                var entityPayload = JsonConvert.SerializeObject(entity);
+
+                await messageBrokerServiceClient.Publish(
+                    serverDescriptor.Id.ToString(),
+                    string.Concat(nameof(Insert).ToLower(), "#", typeof(T).Name.ToLower()),
+                    entityPayload);
             }
             return entity;
         }
@@ -66,13 +64,16 @@ namespace WebServer.Infrastructure.Repository
 
             if (result.IsAcknowledged && result.ModifiedCount > 0)
             {
+                Console.WriteLine("Updating entity from database: " + entity.Id);
+
                 if (createEvent)
                 {
-                    messageBroker.Publish(UpdateQueue, new EntityUpdateEvent<TEvent>
-                    {
-                        EmittedServerId = serverDescriptor.Id,
-                        Entity = CreateEventModel(entity)
-                    });
+                    var entityPayload = JsonConvert.SerializeObject(entity);
+
+                    await messageBrokerServiceClient.Publish(
+                        serverDescriptor.Id.ToString(),
+                        string.Concat(nameof(Update).ToLower(), "#", typeof(T).Name.ToLower()),
+                        entityPayload);
                 }
                 return entity;
             }
@@ -86,54 +87,16 @@ namespace WebServer.Infrastructure.Repository
         {
             var filter = DeleteFilter(id);
             await Collection.DeleteOneAsync(filter, cancellationToken);
+
+            Console.WriteLine("Deleting entity from database: " + id);
             if (createEvent)
             {
-                messageBroker.Publish(DeleteQueue, new EntityDeleteEvent
-                {
-                    EmittedServerId = serverDescriptor.Id,
-                    Id = id
-                });
-            }
-        }
+                var entityPayload = JsonConvert.SerializeObject(CreateModelFromId(id));
 
-        public async void OnInsertEvent(EntityInsertEvent<TEvent> @event)
-        {
-            if (@event.EmittedServerId == serverDescriptor.Id)
-            {
-                Console.WriteLine("Skipping insert because emitter server id matches current");
-            } else
-            {
-                var entity = CreateModel(@event.Entity);
-                Console.WriteLine("Inserting entity to database: " + entity.Id);
-
-                await Insert(entity, CancellationToken.None, false);
-            }
-        }
-
-        public async void OnUpdateEvent(EntityUpdateEvent<TEvent> @event)
-        {
-            if (@event.EmittedServerId == serverDescriptor.Id)
-            {
-                Console.WriteLine("Skipping update because emitter server id matches current");
-            } else
-            {
-                var eventEntity = @event.Entity;
-                var entity = await Get(eventEntity.Id, new CancellationTokenSource().Token);
-                Console.WriteLine("Updating entity from database: " + entity.Id);
-                UpdateEntity(eventEntity, entity, false);
-                await Update(entity, CancellationToken.None, false);
-            }
-        }
-
-        public async void OnDeleteEvent(EntityDeleteEvent @event)
-        {
-            if (@event.EmittedServerId == serverDescriptor.Id)
-            {
-                Console.WriteLine("Skipping delete because emitter server id matches current");
-            } else
-            {
-                Console.WriteLine("Deleting entity from database: " + @event.Id);
-                await Delete(@event.Id, CancellationToken.None, false);
+                await messageBrokerServiceClient.Publish(
+                    serverDescriptor.Id.ToString(),
+                    string.Concat(nameof(Delete).ToLower(), "#", typeof(T).Name.ToLower()),
+                    entityPayload);
             }
         }
 
@@ -144,8 +107,6 @@ namespace WebServer.Infrastructure.Repository
         public abstract FilterDefinition<T> UpdateGetFilter(Guid id);
         public abstract UpdateDefinition<T> UpdateFilter(T entity);
 
-        public abstract T CreateModel(TEvent entityEvent);
-        public abstract TEvent CreateEventModel(T entity);
-        public abstract void UpdateEntity(TEvent @event, T entity, bool copyId);
+        public abstract T CreateModelFromId(Guid id);
     }
 }

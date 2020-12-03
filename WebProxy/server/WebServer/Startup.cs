@@ -1,21 +1,19 @@
-using MessageBroker;
-using MessageBroker.Models;
+using GreenPipes;
+using MassTransit;
+using MassTransit.Azure.ServiceBus.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System;
-using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using WebServer.Application;
 using WebServer.Application.Abstractions;
-using WebServer.Application.Abstractions.Domain;
 using WebServer.Application.Services;
-using WebServer.Domain.Events;
+using WebServer.Infrastructure.gRPC;
 using WebServer.Infrastructure.Persistence;
 using WebServer.Infrastructure.Repository;
 
@@ -33,6 +31,26 @@ namespace WebServer
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var appId = Guid.NewGuid();
+
+            services.AddMassTransit(x =>
+            {
+                x.AddConsumer<MessageBusConsumer>();
+                x.AddBus(provider => Bus.Factory.CreateUsingAzureServiceBus(cfg =>
+                {
+                    cfg.UseHealthCheck(provider);
+                    cfg.Host(Configuration.GetConnectionString("MessageBrokerHost"));
+                    cfg.ReceiveEndpoint(appId.ToString(), ep =>
+                    {
+                        ep.PrefetchCount = 8;
+                        ep.AutoDeleteOnIdle = TimeSpan.FromMinutes(5);
+                        ep.UseMessageRetry(r => r.Interval(2, 100));
+                        ep.ConfigureConsumer<MessageBusConsumer>(provider);
+                    });
+                }));
+            });
+            services.AddMassTransitHostedService();
+
             services.AddControllers();
 
             services.Configure<ConnectionDatabaseSettings>(Configuration.GetSection("ConnectionDatabaseSettings"));
@@ -46,8 +64,8 @@ namespace WebServer
             services.AddSingleton<IActorRepository, ActorSyncRepository>();
             services.AddSingleton<IMovieRepository, MovieSyncRepository>();
 
-            services.AddSingleton(new ServerDescriptor());
-            services.AddSingleton(new MessageBus(Configuration.GetConnectionString("MessageBroker")));
+            services.AddSingleton<IMessageBrokerServiceClient, MessageBrokerServiceClient>();
+            services.AddSingleton(new ServerDescriptor(appId));
 
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen();
@@ -59,7 +77,6 @@ namespace WebServer
             try
             {
                 Task.Factory.StartNew(() => EnqueueServer(app));
-                StartSync(app);
             }
             catch (Exception e)
             {
@@ -96,36 +113,13 @@ namespace WebServer
             });
         }
 
-        private void StartSync(IApplicationBuilder app)
+        private async void EnqueueServer(IApplicationBuilder app)
         {
-            var messageBus = app.ApplicationServices.GetService<MessageBus>();
-            var actorRepository = app.ApplicationServices.GetService<IActorRepository>();
-            var movieRepository = app.ApplicationServices.GetService<IMovieRepository>();
-
-            Console.WriteLine("> Registering actor synchronizer");
-            RegisterSync(actorRepository, messageBus);
-            Console.WriteLine("> Registering movie synchronizer");
-            RegisterSync(movieRepository, messageBus);
-        }
-
-        private void RegisterSync<T, TEvent>(IEventSynchronizer<T, TEvent> eventSynchronizer, MessageBus messageBus)
-            where T : IEntity where TEvent : IEventEntity
-        {
-            messageBus.Subscribe<EntityInsertEvent<TEvent>>(eventSynchronizer.InsertQueue, eventSynchronizer.OnInsertEvent);
-            messageBus.Subscribe<EntityUpdateEvent<TEvent>>(eventSynchronizer.UpdateQueue, eventSynchronizer.OnUpdateEvent);
-            messageBus.Subscribe<EntityDeleteEvent>(eventSynchronizer.DeleteQueue, eventSynchronizer.OnDeleteEvent);
-        }
-
-        private void EnqueueServer(IApplicationBuilder app)
-        {
-            var messageBus = app.ApplicationServices.GetService<MessageBus>();
+            var messageBrokerClient = app.ApplicationServices.GetService<IMessageBrokerServiceClient>();
             var serviceDescriptor = app.ApplicationServices.GetService<ServerDescriptor>();
-
             serviceDescriptor.Url = GetServerAddress(app);
-            messageBus.Publish("Server", new ServerEvent
-            {
-                Url = serviceDescriptor.Url
-            });
+
+            await messageBrokerClient.Subscribe(serviceDescriptor.Id.ToString(), serviceDescriptor.Url);
         }
 
         private string GetServerAddress(IApplicationBuilder app)
@@ -134,9 +128,7 @@ namespace WebServer
 
             try
             {
-                var serverAddressesFeature = app.ServerFeatures.Get<IServerAddressesFeature>();
-                var address = serverAddressesFeature.Addresses.First();
-                return address;
+                return (string)Configuration.GetValue(typeof(string), "AppHost");
             }
             catch (SocketException e)
             {

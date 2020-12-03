@@ -1,4 +1,4 @@
-﻿namespace MessageBroker.Models
+﻿namespace Common.Models
 {
     public class ServerEvent
     {

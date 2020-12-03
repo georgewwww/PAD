@@ -22,5 +22,17 @@ namespace WebServer.Domain.Entities
         public float Score { get; set; }
         [BsonElement]
         public string Description { get; set; }
+
+        public Movie()
+        {
+            Id = Guid.Empty;
+            Name = string.Empty;
+            PosterLink = string.Empty;
+            Genre = string.Empty;
+            PremYear = 0;
+            Time = string.Empty;
+            Score = 0f;
+            Description = string.Empty;
+        }
     }
 }

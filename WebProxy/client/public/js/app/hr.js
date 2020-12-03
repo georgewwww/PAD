@@ -1,6 +1,9 @@
 angular.module('hr', [
     'ui.router'
 ]);
+
+let sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 (function() {
     'use strict';
 
@@ -87,7 +90,7 @@ angular.module('hr', [
 
             $http({
                 method: 'POST',
-                url: 'https://localhost:44353/api/actor',
+                url: 'http://localhost:8080/api/actor',
                 data: self.updatedActor,
                 headers: {
                     'Content-Type': 'application/json'
@@ -95,6 +98,7 @@ angular.module('hr', [
             })
             .then(function(response) {
                 console.log('succes');
+                sleep(1000);
                 $state.go('actors');
             }, function(error) {
                 console.log('can not put data.');
@@ -118,7 +122,7 @@ angular.module('hr', [
 
         $http({
             method: 'get',
-            url: 'https://localhost:44353/api/Actor/' + self.actorId
+            url: 'http://localhost:8080/api/Actor/' + self.actorId
         }).then(function(response) {
             console.log(response, 'res');
             self.actor = response.data;
@@ -138,7 +142,7 @@ angular.module('hr', [
             console.log(self.updatedActor)
             $http({
                     method: 'PUT',
-                    url: 'https://localhost:44353/api/Actor/' + self.actorId,
+                    url: 'http://localhost:8080/api/Actor/' + self.actorId,
                     data: self.updatedActor,
                     headers: {
                         'Content-Type': 'application/json'
@@ -146,6 +150,7 @@ angular.module('hr', [
                 })
                 .then(function(response) {
                     console.log('succes');
+                    sleep(1000);
                     $state.go('actors');
                 }, function(error) {
                     console.log('can not put data.');
@@ -165,7 +170,7 @@ angular.module('hr', [
         var self = this;
         $http({
             method: 'GET',
-            url: 'https://localhost:44353/api/actor',
+            url: 'http://localhost:8080/api/actor',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -202,7 +207,7 @@ angular.module('hr', [
             }
             $http({
                     method: 'POST',
-                    url: 'https://localhost:44353/api/movie',
+                    url: 'http://localhost:8080/api/movie',
                     data: self.updatedMovie,
                     headers: {
                         'Content-Type': 'application/json'
@@ -210,6 +215,7 @@ angular.module('hr', [
                 })
                 .then(function(response) {
                     console.log('succes');
+                    sleep(1000);
                     $state.go('movies');
                 }, function(error) {
                     console.log('can not put data.');
@@ -233,7 +239,7 @@ angular.module('hr', [
 
         $http({
             method: 'get',
-            url: 'https://localhost:44353/api/Movie/' + self.movieId
+            url: 'http://localhost:8080/api/Movie/' + self.movieId
         }).then(function(response) {
             console.log(response, 'res');
             self.movie = response.data;
@@ -255,7 +261,7 @@ angular.module('hr', [
             console.log(self.updatedMovie)
             $http({
                     method: 'PUT',
-                    url: 'https://localhost:44353/api/Movie/' + self.movieId,
+                    url: 'http://localhost:8080/api/Movie/' + self.movieId,
                     data: self.updatedMovie,
                     headers: {
                         'Content-Type': 'application/json'
@@ -263,6 +269,7 @@ angular.module('hr', [
                 })
                 .then(function(response) {
                     console.log('succes');
+                    sleep(1000);
                     $state.go('movies');
                 }, function(error) {
                     console.log('can not put data.');
@@ -283,7 +290,7 @@ angular.module('hr', [
 
         $http({
             method: 'get',
-            url: 'https://localhost:44353/api/movie'
+            url: 'http://localhost:8080/api/movie'
         }).then(function(response) {
             console.log(response, 'res');
             self.movies = response.data;
@@ -307,7 +314,7 @@ angular.module('hr', [
         
         $http({
             method: 'get',
-            url: 'https://localhost:44353/api/Actor/' + self.actorId
+            url: 'http://localhost:8080/api/Actor/' + self.actorId
         }).then(function(response) {
             console.log(response, 'res');
             self.actor = response.data;
@@ -318,10 +325,11 @@ angular.module('hr', [
         self.delete = function(actorId) {
             $http({
                 method: 'DELETE',
-                url: 'https://localhost:44353/api/Actor?Id=' + actorId
+                url: 'http://localhost:8080/api/Actor?Id=' + actorId
             })
             .then(function(response) {
                 console.log('succes');
+                sleep(1000);
                 $state.go('actors');
             }, function(error) {
                 console.log('can not put data.');
@@ -344,7 +352,7 @@ angular.module('hr', [
         
         $http({
             method: 'get',
-            url: 'https://localhost:44353/api/Movie/' + self.movieId
+            url: 'http://localhost:8080/api/Movie/' + self.movieId
         }).then(function(response) {
             console.log(response, 'res');
             self.movie = response.data;
@@ -355,10 +363,11 @@ angular.module('hr', [
         self.delete = function(movieId) {
             $http({
                 method: 'DELETE',
-                url: 'https://localhost:44353/api/Movie?Id=' + movieId
+                url: 'http://localhost:8080/api/Movie?Id=' + movieId
             })
             .then(function(response) {
                 console.log('succes');
+                sleep(1000);
                 $state.go('movies');
             }, function(error) {
                 console.log('can not put data.');

@@ -22,7 +22,7 @@
             }
             $http({
                     method: 'POST',
-                    url: 'https://localhost:44353/api/movie',
+                    url: 'http://localhost:8080/api/movie',
                     data: self.updatedMovie,
                     headers: {
                         'Content-Type': 'application/json'

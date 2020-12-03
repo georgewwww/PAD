@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  client:
+    image: client
+    build:
+      context: ./client/
+      dockerfile: Client.Dockerfile
+    ports:
+      - 4000:4000
+
+  smart_proxy:
+    build:
+      context: ./server/
+      dockerfile: SmartProxy.Dockerfile
+    environment:
+      LoadBalancerListenUrl: http://*:80/
+      RedisHost: redis:6379
+      MessageBrokerHost: connectionString
+    ports: 
+      - 8080:80
+    depends_on:
+      - redis
+
+  message_broker:
+    build:
+      context: ./server/
+      dockerfile: MessageBus.Dockerfile
+    ports:
+      - 5000:80
+      - 5001:443
+
+  web_md:
+    build:
+      context: ./server/
+      dockerfile: WebServer.Dockerfile
+    environment:
+      AppHost: http://web_md:80
+      ConnectionDatabaseSettings:ConnectionString: mongodb://mongo:27017/db_md
+      ConnectionDatabaseSettings:DatabaseName: db_md
+      ConnectionStrings:MessageBrokerGrpc: message_broker
+    ports:
+      - 8000:80
+      - 8001:443
+    depends_on:
+      - mongo
+      - message_broker
+
+  web_us:
+    build:
+      context: ./server/
+      dockerfile: WebServer.Dockerfile
+    environment:
+      AppHost: http://web_us:80
+      ConnectionDatabaseSettings:ConnectionString: mongodb://mongo:27017/db_us
+      ConnectionDatabaseSettings:DatabaseName: db_us
+      ConnectionStrings:MessageBrokerGrpc: message_broker
+    ports:
+      - 9000:80
+      - 9001:443
+    depends_on:
+      - mongo
+      - message_broker
+
+  mongo:
+    image: mongo
+    restart: always
+    ports:
+      - 27017:27017
+
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
