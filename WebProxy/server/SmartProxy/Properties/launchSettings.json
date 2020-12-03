@@ -5,9 +5,7 @@
       "environmentVariables": {
         "RedisHost": "localhost:6379",
         "LoadBalancerListenUrl": "http://*:8080/",
-        "MessageBrokerHost": "localhost",
-        "MessageBrokerUsername": "root",
-        "MessageBrokerPassword": "root"
+        "MessageBrokerHost": ""
       }
     }
   }

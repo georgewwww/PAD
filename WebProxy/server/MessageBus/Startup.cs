@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
 
 namespace MessageBroker
 {
@@ -27,14 +26,10 @@ namespace MessageBroker
         {
             services.AddMassTransit(x =>
             {
-                x.AddBus(provider => Bus.Factory.CreateUsingRabbitMq(config =>
+                x.AddBus(provider => Bus.Factory.CreateUsingAzureServiceBus(config =>
                 {
                     config.UseHealthCheck(provider);
-                    config.Host(new Uri($"rabbitmq://{Configuration.GetConnectionString("MessageBrokerHost")}"), h =>
-                    {
-                        h.Username(Configuration.GetConnectionString("MessageBrokerUsername"));
-                        h.Password(Configuration.GetConnectionString("MessageBrokerPassword"));
-                    });
+                    config.Host(Configuration.GetConnectionString("MessageBrokerHost"));
                 }));
             });
             services.AddMassTransitHostedService();

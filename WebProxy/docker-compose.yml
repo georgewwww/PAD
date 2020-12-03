@@ -1,65 +1,64 @@
 version: '3.8'
 
 services:
-  # smart_proxy:
-  #   build:
-  #     context: ./
-  #     dockerfile: SmartProxy.Dockerfile
-  #   environment:
-  #     LoadBalancerListenUrl: http://*:80/
-  #     MessageBrokerHost: rabbitmq
-  #     RedisHost: redis:6379
-  #   ports: 
-  #     - 8080:80
-  #   depends_on: 
-  #     - rabbitmq
-  #     - redis
+  client:
+    image: client
+    build:
+      context: ./client/
+      dockerfile: Client.Dockerfile
+    ports:
+      - 4000:4000
+
+  smart_proxy:
+    build:
+      context: ./server/
+      dockerfile: SmartProxy.Dockerfile
+    environment:
+      LoadBalancerListenUrl: http://*:80/
+      RedisHost: redis:6379
+      MessageBrokerHost: connectionString
+    ports: 
+      - 8080:80
+    depends_on:
+      - redis
 
   message_broker:
     build:
-      context: ./
+      context: ./server/
       dockerfile: MessageBus.Dockerfile
-    environment:
-      ConnectionStrings:MessageBrokerHost: rabbitmq
     ports:
       - 5000:80
       - 5001:443
-    depends_on:
-      - rabbitmq
 
   web_md:
     build:
-      context: ./
+      context: ./server/
       dockerfile: WebServer.Dockerfile
     environment:
-      AppHost: http://localhost:8000
+      AppHost: http://web_md:80
       ConnectionDatabaseSettings:ConnectionString: mongodb://mongo:27017/db_md
       ConnectionDatabaseSettings:DatabaseName: db_md
-      ConnectionStrings:MessageBrokerHost: rabbitmq
       ConnectionStrings:MessageBrokerGrpc: message_broker
     ports:
       - 8000:80
       - 8001:443
     depends_on:
-      - rabbitmq
       - mongo
       - message_broker
 
   web_us:
     build:
-      context: ./
+      context: ./server/
       dockerfile: WebServer.Dockerfile
     environment:
-      AppHost: http://localhost:9000
+      AppHost: http://web_us:80
       ConnectionDatabaseSettings:ConnectionString: mongodb://mongo:27017/db_us
       ConnectionDatabaseSettings:DatabaseName: db_us
-      ConnectionStrings:MessageBrokerHost: rabbitmq
       ConnectionStrings:MessageBrokerGrpc: message_broker
     ports:
       - 9000:80
       - 9001:443
     depends_on:
-      - rabbitmq
       - mongo
       - message_broker
 
@@ -68,16 +67,6 @@ services:
     restart: always
     ports:
       - 27017:27017
-
-  rabbitmq:
-    image: "rabbitmq:3-management"
-    hostname: "rabbitmq"
-    environment:
-      - RABBITMQ_DEFAULT_USER=root
-      - RABBITMQ_DEFAULT_PASS=root     
-    ports:
-      - 5672:5672
-      - 15672:15672
 
   redis:
     image: redis

@@ -24,7 +24,7 @@ namespace MessageBus.Services
 
         public async Task Publish<T>(string queue, T message)
         {
-            var uri = new Uri(string.Concat($"rabbitmq://{configuration.GetConnectionString("MessageBrokerHost")}/", queue));
+            var uri = new Uri($"{configuration.GetConnectionString("MessageBrokerBaseHost")}/{queue}");
             var endPoint = await bus.GetSendEndpoint(uri);
             await endPoint.Send(message);
         }

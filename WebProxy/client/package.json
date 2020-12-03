@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "people management",
   "main": "server.js",
+  "scripts": {
+    "dev": "node ./server/server.js"
+  },
   "dependencies": {
     "body-parser": "^1.15.2",
     "express": "^4.14.0",

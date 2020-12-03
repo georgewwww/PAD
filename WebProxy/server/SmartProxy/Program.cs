@@ -21,16 +21,12 @@ namespace SmartProxy
             httpListener = new HttpListener();
             connectionMultiplexer = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable("RedisHost") + ",allowAdmin=true");
 
-            var busControl = Bus.Factory.CreateUsingRabbitMq(cfg =>
+            var busControl = Bus.Factory.CreateUsingAzureServiceBus(cfg =>
             {
-                cfg.Host(new Uri($"rabbitmq://{Environment.GetEnvironmentVariable("MessageBrokerHost")}"), h =>
-                {
-                    h.Username(Environment.GetEnvironmentVariable("MessageBrokerUsername"));
-                    h.Password(Environment.GetEnvironmentVariable("MessageBrokerPassword"));
-                });
+                cfg.Host(Environment.GetEnvironmentVariable("MessageBrokerHost"));
                 cfg.ReceiveEndpoint("server-listener", e =>
                 {
-                    e.PrefetchCount = 16;
+                    e.PrefetchCount = 8;
                     e.UseMessageRetry(r => r.Interval(2, 100));
                     e.Handler<ServerEvent>(context =>
                     {
@@ -49,7 +45,7 @@ namespace SmartProxy
 
             try
             {
-                await Task.Run(() => Console.ReadLine());
+                while (true);
             }
             finally
             {

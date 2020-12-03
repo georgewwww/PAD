@@ -1,15 +1,13 @@
 using GreenPipes;
 using MassTransit;
+using MassTransit.Azure.ServiceBus.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System;
-using System.Linq;
-using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using WebServer.Application;
@@ -38,17 +36,14 @@ namespace WebServer
             services.AddMassTransit(x =>
             {
                 x.AddConsumer<MessageBusConsumer>();
-                x.AddBus(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
+                x.AddBus(provider => Bus.Factory.CreateUsingAzureServiceBus(cfg =>
                 {
                     cfg.UseHealthCheck(provider);
-                    cfg.Host(new Uri($"rabbitmq://{Configuration.GetConnectionString("MessageBrokerHost")}"), h =>
-                    {
-                        h.Username(Configuration.GetConnectionString("MessageBrokerUsername"));
-                        h.Password(Configuration.GetConnectionString("MessageBrokerPassword"));
-                    });
+                    cfg.Host(Configuration.GetConnectionString("MessageBrokerHost"));
                     cfg.ReceiveEndpoint(appId.ToString(), ep =>
                     {
-                        ep.PrefetchCount = 16;
+                        ep.PrefetchCount = 8;
+                        ep.AutoDeleteOnIdle = TimeSpan.FromMinutes(5);
                         ep.UseMessageRetry(r => r.Interval(2, 100));
                         ep.ConfigureConsumer<MessageBusConsumer>(provider);
                     });
